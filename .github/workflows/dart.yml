@@ -1,0 +1,88 @@
+name: Dart LMDB2
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            cmake-install: sudo apt-get install -y cmake build-essential
+          - os: macos-latest
+            cmake-install: brew install cmake
+          - os: windows-latest
+            cmake-install: choco install cmake
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+
+      - name: Install CMake and build tools
+        run: ${{ matrix.cmake-install }}
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Build native library
+        run: dart run tool/build.dart
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze project source
+        run: dart analyze --fatal-infos
+
+      - name: Run tests
+        run: dart test
+
+      # Upload built libraries as artifacts
+      - name: Upload native library
+        uses: actions/upload-artifact@v3
+        with:
+          name: native-lib-${{ matrix.os }}
+          path: lib/src/native/*
+
+  publish:
+    needs: build-and-test
+    if: github.event_name == 'release' && github.event.action == 'created'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+
+      - name: Download all native libraries
+        uses: actions/download-artifact@v3
+        with:
+          path: lib/src/native/
+
+      # Optional: Publish to pub.dev
+      - name: Publish to pub.dev
+        run: dart pub publish --force
+        env:
+          PUB_CREDENTIALS: ${{ secrets.PUB_CREDENTIALS }}
+
+  docs:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Generate documentation
+        run: dart doc
