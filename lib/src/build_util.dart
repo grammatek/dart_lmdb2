@@ -76,7 +76,9 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
       (f) => f.existsSync(),
       orElse: () {
         print('Searched for library in:');
-        possiblePaths.forEach((p) => print('  $p'));
+        for (final p in possiblePaths) {
+          print('  $p');
+        }
         throw BuildException(
           'Could not find built library. Searched in: ${possiblePaths.join(", ")}',
           1,
