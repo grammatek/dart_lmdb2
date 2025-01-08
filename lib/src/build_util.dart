@@ -61,7 +61,33 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
   }
 
   final String libraryName = _getPlatformLibraryName();
-  final builtLib = File(path.join(buildDir.path, 'lib', libraryName));
+  final File builtLib;
+
+  if (Platform.isWindows) {
+    // Windows legt die DLL in verschiedene mögliche Verzeichnisse
+    final possiblePaths = [
+      path.join(buildDir.path, 'lib', 'Release', libraryName),
+      path.join(buildDir.path, 'Release', libraryName),
+      path.join(buildDir.path, 'bin', 'Release', libraryName),
+      path.join(buildDir.path, 'x64', 'Release', libraryName),
+    ];
+
+    builtLib = possiblePaths.map((p) => File(p)).firstWhere(
+      (f) => f.existsSync(),
+      orElse: () {
+        print('Searched for library in:');
+        possiblePaths.forEach((p) => print('  $p'));
+        throw BuildException(
+          'Could not find built library. Searched in: ${possiblePaths.join(", ")}',
+          1,
+        );
+      },
+    );
+  } else {
+    // Unix-ähnliche Systeme
+    builtLib = File(path.join(buildDir.path, 'lib', libraryName));
+  }
+
   final targetLib = File(path.join(libDir.path, libraryName));
 
   if (builtLib.existsSync()) {
