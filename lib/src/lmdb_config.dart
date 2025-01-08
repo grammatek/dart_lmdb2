@@ -1,62 +1,126 @@
+import 'dart:math';
+
 import 'database_stats.dart';
 
 class LMDBConfig {
-  /// Default page size in bytes
-  static const int defaultPageSize = 16384; // 16KB
-
-  /// Default overhead factor for B+-tree and fragmentation
+  /// Default overhead factor for B+ tree structure and future growth
   static const double defaultOverheadFactor = 1.5;
 
-  /// Minimum map size in bytes
-  static const int minMapSize = 10485760; // 10MB
+  /// Minimum map size (10MB)
+  static const int minMapSize = 10 * 1024 * 1024;
 
-  /// Calculates the recommended map size based on expected data characteristics
-  static int calculateMapSize({
-    required int expectedEntries,
-    required int averageKeySize,
-    required int averageValueSize,
-    double overheadFactor = defaultOverheadFactor,
-    int minimumSize = minMapSize,
-  }) {
-    final dataSize = (averageKeySize + averageValueSize) * expectedEntries;
-    final estimatedSize = (dataSize * overheadFactor).ceil();
-
-    // Round up to next page size
-    final pages = (estimatedSize / defaultPageSize).ceil();
-    final alignedSize = pages * defaultPageSize;
-
-    return alignedSize < minimumSize ? minimumSize : alignedSize;
-  }
-
-  /// Calculates the maximum number of possible entries for a given map size
+  /// Calculates the maximum number of entries possible for a given map size
+  ///
+  /// Parameters:
+  /// - mapSize: Total database size in bytes
+  /// - averageKeySize: Expected average size of keys in bytes
+  /// - averageValueSize: Expected average size of values in bytes
+  /// - overheadFactor: Factor to account for B+ tree overhead (default: 1.5)
+  ///
+  /// Returns the estimated maximum number of entries that can be stored
   static int calculateMaxEntries({
     required int mapSize,
     required int averageKeySize,
     required int averageValueSize,
     double overheadFactor = defaultOverheadFactor,
   }) {
-    final entrySize = averageKeySize + averageValueSize;
-    return (mapSize / (entrySize * overheadFactor)).floor();
+    // Calculate average entry size including overhead
+    final entrySize = (averageKeySize + averageValueSize) * overheadFactor;
+
+    // Calculate maximum entries, ensuring we don't exceed available space
+    return (mapSize / entrySize).floor();
+  }
+
+  /// Calculates required map size based on expected data volume
+  ///
+  /// Parameters:
+  /// - expectedEntries: Number of entries planned to store
+  /// - averageKeySize: Expected average size of keys in bytes
+  /// - averageValueSize: Expected average size of values in bytes
+  /// - overheadFactor: Factor to account for B+ tree overhead (default: 1.5)
+  ///
+  /// Returns the recommended map size in bytes, never less than minMapSize
+  static int calculateMapSize({
+    required int expectedEntries,
+    required int averageKeySize,
+    required int averageValueSize,
+    double overheadFactor = defaultOverheadFactor,
+  }) {
+    // Calculate raw data size
+    final dataSize = (averageKeySize + averageValueSize) * expectedEntries;
+
+    // Add overhead for B+ tree structure
+    final estimatedSize = (dataSize * overheadFactor).ceil();
+
+    // Ensure we never return less than minimum map size
+    return estimatedSize < minMapSize ? minMapSize : estimatedSize;
   }
 
   /// Analyzes current database usage
   static String analyzeUsage(DatabaseStats stats) {
-    final totalPages =
-        stats.leafPages + stats.branchPages + stats.overflowPages;
-    final usedSpace = totalPages * stats.pageSize;
-    final averageEntriesPerPage = stats.entries / stats.leafPages;
+    final branchToLeafRatio =
+        stats.leafPages > 0 ? stats.branchPages / stats.leafPages : 0.0;
+
+    final averageEntriesPerLeafPage =
+        stats.leafPages > 0 ? stats.entries / stats.leafPages : 0.0;
 
     return '''
 Database Usage Analysis:
 - Total Entries: ${stats.entries}
-- Tree Depth: ${stats.depth}
-- Page Size: ${stats.pageSize} bytes
-- Total Pages: $totalPages
-- Used Space: ${(usedSpace / 1024 / 1024).toStringAsFixed(2)} MB
-- Average Entries per Leaf Page: ${averageEntriesPerPage.toStringAsFixed(2)}
-- Branch/Leaf Ratio: ${(stats.branchPages / stats.leafPages).toStringAsFixed(3)}
+- Tree Structure:
+  • Depth: ${stats.depth}
+  • Branch Pages: ${stats.branchPages}
+  • Leaf Pages: ${stats.leafPages}
+  • Branch/Leaf Ratio: ${branchToLeafRatio.toStringAsFixed(3)}
+- Performance Metrics:
+  • Average Entries per Leaf Page: ${averageEntriesPerLeafPage.toStringAsFixed(2)}
+  • Overflow Pages: ${stats.overflowPages}
 ''';
   }
+
+  /// Analyzes database efficiency and returns structured metrics
+  static DatabaseEfficiency analyzeEfficiency(DatabaseStats stats) {
+    return DatabaseEfficiency(
+      totalEntries: stats.entries,
+      treeDepth: stats.depth,
+      branchToLeafRatio:
+          stats.leafPages > 0 ? stats.branchPages / stats.leafPages : 0.0,
+      averageEntriesPerLeafPage:
+          stats.leafPages > 0 ? stats.entries / stats.leafPages : 0.0,
+      hasOverflow: stats.overflowPages > 0,
+    );
+  }
+}
+
+// Represents database efficiency metrics for analyzing LMDB performance
+class DatabaseEfficiency {
+  final int totalEntries;
+  final int treeDepth;
+  final double branchToLeafRatio;
+  final double averageEntriesPerLeafPage;
+  final bool hasOverflow;
+
+  DatabaseEfficiency({
+    required this.totalEntries,
+    required this.treeDepth,
+    required this.branchToLeafRatio,
+    required this.averageEntriesPerLeafPage,
+    required this.hasOverflow,
+  });
+
+  /// Returns true if the B+ tree structure is well-balanced
+  /// A well-balanced tree has:
+  /// - Branch to leaf ratio < 0.3 (fewer branch pages than leaf pages)
+  /// - Tree depth close to optimal for the number of entries
+  bool get isWellBalanced =>
+      branchToLeafRatio < 0.3 &&
+      treeDepth <= (log(totalEntries) / log(2)).ceil();
+
+  /// Returns true if the database storage is efficiently utilized
+  /// Efficient storage has:
+  /// - Good number of entries per leaf page
+  /// - No overflow pages
+  bool get isEfficient => averageEntriesPerLeafPage > 10 && !hasOverflow;
 }
 
 // Configuration class for database initialization

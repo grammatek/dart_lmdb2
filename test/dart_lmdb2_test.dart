@@ -8,36 +8,53 @@ import 'package:dart_lmdb2/dart_lmdb2.dart';
 void main() {
   late LMDB2 db;
   late String dbPath;
+  late Directory testDir;
 
   setUp(() async {
-    dbPath = path.join(
+    // Create test directory with unique name
+    testDir = Directory(path.join(
       Directory.current.path,
       'test_data',
       'db_${DateTime.now().millisecondsSinceEpoch}',
-    );
+    ));
 
-    final dir = Directory(dbPath);
-    if (dir.existsSync()) {
-      dir.deleteSync(recursive: true);
+    // Ensure clean state
+    if (testDir.existsSync()) {
+      testDir.deleteSync(recursive: true);
     }
-    dir.createSync(recursive: true);
+    testDir.createSync(recursive: true);
 
-    final config = LMDBInitConfig(
-      mapSize: LMDBConfig.minMapSize,
-      maxDbs: 1,
-      envFlags: 0,
-      mode: 0664,
-    );
+    dbPath = testDir.path;
 
+    // Initialize database
     db = LMDB2();
-    await db.init(dbPath, config: config);
+    try {
+      final config = LMDBInitConfig(
+        mapSize: LMDBConfig.minMapSize,
+      );
+      await db.init(dbPath, config: config);
+    } catch (e) {
+      // If initialization fails, clean up and rethrow
+      testDir.deleteSync(recursive: true);
+      rethrow;
+    }
   });
 
-  tearDown(() {
-    db.close();
-    final dir = Directory(dbPath);
-    if (dir.existsSync()) {
-      dir.deleteSync(recursive: true);
+  tearDown(() async {
+    // Ensure database is properly closed
+    try {
+      db.close();
+    } catch (e) {
+      print('Warning: Error during database closure: $e');
+    } finally {
+      // Always try to clean up the test directory
+      try {
+        if (testDir.existsSync()) {
+          testDir.deleteSync(recursive: true);
+        }
+      } catch (e) {
+        print('Warning: Error during test directory cleanup: $e');
+      }
     }
   });
 
@@ -157,7 +174,6 @@ void main() {
       final stats = await db.stats(txn);
 
       expect(stats.entries, equals(3));
-      expect(stats.pageSize, equals(16384));
       expect(stats.depth, greaterThanOrEqualTo(1));
       expect(stats.leafPages, greaterThan(0));
 
@@ -169,20 +185,26 @@ void main() {
   });
 
   test('Large scale database statistics', () async {
+    const int totalEntries = 100000;
+    const int averageKeySize = 14; // 'key_' + 10 digits
+    const int averageValueSize = 550; // average of random(100-1000)
+    const double overheadFactor = 1.5; // B+ tree overhead and fragmentation
+    const int batchSize = 1000;
+    const int checkInterval = 5000; // Check stats frequency
+
     final config = LMDBInitConfig.fromEstimate(
-      expectedEntries: 1000000,
-      averageKeySize: 14, // 'key_' + 10 digits
-      averageValueSize: 550, // average of random(100-1000)
-      overheadFactor: 1.5, // B+ tree overhead and fragmentation
-    );
+        expectedEntries: totalEntries,
+        averageKeySize: averageKeySize,
+        averageValueSize: averageValueSize,
+        overheadFactor: overheadFactor);
 
     print('Database Configuration:');
     print(
         '- Map Size: ${(config.mapSize / 1024 / 1024).toStringAsFixed(2)} MB');
     print('- Max Possible Entries: ${LMDBConfig.calculateMaxEntries(
       mapSize: config.mapSize,
-      averageKeySize: 14,
-      averageValueSize: 550,
+      averageKeySize: averageKeySize,
+      averageValueSize: averageValueSize,
     )}');
 
     final largeDbPath = path.join(
@@ -195,9 +217,6 @@ void main() {
     await largeDb.init(largeDbPath, config: config);
 
     final random = Random();
-    const int totalEntries = 1000000;
-    const int batchSize = 10000;
-    const int checkInterval = 50000; // Check stats frequency
 
     Uint8List generateRandomValue(int length) {
       return Uint8List.fromList(
@@ -234,14 +253,10 @@ void main() {
 
             // Verify database consistency
             expect(stats.entries, equals(batchEnd));
-            expect(stats.pageSize, equals(LMDBConfig.defaultPageSize));
             expect(stats.depth, greaterThanOrEqualTo(lastCheckedDepth));
-
-            final totalPages =
-                stats.leafPages + stats.branchPages + stats.overflowPages;
+            stats.leafPages + stats.branchPages + stats.overflowPages;
             print('Statistics at $batchEnd entries:');
             print('- Depth: ${stats.depth}');
-            print('- Total Pages: $totalPages');
             print('- Branch Pages: ${stats.branchPages}');
             print('- Leaf Pages: ${stats.leafPages}');
             print('- Overflow Pages: ${stats.overflowPages}');

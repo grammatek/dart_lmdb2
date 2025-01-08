@@ -10,8 +10,27 @@ import 'database_stats.dart';
 import 'lmdb_config.dart';
 
 class LMDB2 {
+  /// Native library bindings
   late final NativeLibrary _lib;
-  late final Pointer<MDB_env> _env;
+
+  /// The native LMDB environment pointer
+  Pointer<MDB_env>? _env;
+
+  /// Indicates if the database has been closed
+  bool _closed = false;
+
+  /// Safe accessor for the environment pointer
+  ///
+  /// Throws [StateError] if the database is closed or not initialized
+  Pointer<MDB_env> get env {
+    if (_closed) {
+      throw StateError('Cannot access closed database');
+    }
+    if (_env == null) {
+      throw StateError('Database not initialized');
+    }
+    return _env!;
+  }
 
   LMDB2() {
     _lib = NativeLibrary(_openDynamicLibrary());
@@ -36,19 +55,40 @@ class LMDB2 {
     throw UnsupportedError('Unsupported platform');
   }
 
+  /// Initialize the database with the given path and configuration
+  ///
+  /// Throws [StateError] if:
+  /// - Database is already initialized
+  /// - Database is closed
+  ///
+  /// Throws [LMDBException] if:
+  /// - Environment creation fails
+  /// - Map size setting fails
+  /// - Environment opening fails
   Future<void> init(String dbPath, {LMDBInitConfig? config}) async {
-    final effectiveConfig = config ??
-        LMDBInitConfig(
-          mapSize: LMDBConfig.minMapSize,
-        );
+    if (_closed) {
+      throw StateError('Cannot initialize closed database');
+    }
+    if (_env != null) {
+      throw StateError('Database already initialized');
+    }
+
     // Ensure directory exists
     final dir = Directory(dbPath);
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);
     }
 
-    final envPtr = calloc<Pointer<MDB_env>>();
+    // Use provided config or create default
+    final effectiveConfig = config ??
+        LMDBInitConfig(
+          mapSize: LMDBConfig.minMapSize,
+          maxDbs: 1,
+          envFlags: 0,
+          mode: 0664,
+        );
 
+    final envPtr = calloc<Pointer<MDB_env>>();
     try {
       // Create environment
       final result = _lib.mdb_env_create(envPtr);
@@ -59,21 +99,37 @@ class LMDB2 {
       _env = envPtr.value;
 
       // Set map size
-      final setSizeResult =
-          _lib.mdb_env_set_mapsize(_env, effectiveConfig.mapSize);
+      final setSizeResult = _lib.mdb_env_set_mapsize(
+        env, // Using getter to ensure valid state
+        effectiveConfig.mapSize,
+      );
+
       if (setSizeResult != 0) {
         throw LMDBException('Failed to set map size', setSizeResult);
+      }
+
+      // Set max DBs if specified
+      if (effectiveConfig.maxDbs > 1) {
+        final setDbsResult = _lib.mdb_env_set_maxdbs(
+          env,
+          effectiveConfig.maxDbs,
+        );
+
+        if (setDbsResult != 0) {
+          throw LMDBException('Failed to set max DBs', setDbsResult);
+        }
       }
 
       // Open environment
       final pathPtr = dbPath.toNativeUtf8();
       try {
         final openResult = _lib.mdb_env_open(
-          _env,
+          env,
           pathPtr.cast(),
-          0, // flags
-          0664, // mode (Unix style permissions)
+          effectiveConfig.envFlags,
+          effectiveConfig.mode,
         );
+
         if (openResult != 0) {
           throw LMDBException('Failed to open environment', openResult);
         }
@@ -81,9 +137,29 @@ class LMDB2 {
         calloc.free(pathPtr);
       }
     } catch (e) {
-      calloc.free(envPtr);
+      // Clean up on any error
+      if (_env != null) {
+        _lib.mdb_env_close(_env!);
+        _env = nullptr;
+      }
       rethrow;
+    } finally {
+      calloc.free(envPtr);
     }
+  }
+
+  /// Close the database and release resources
+  void close() {
+    if (_closed) {
+      return; // Already closed
+    }
+
+    if (_env != null) {
+      _lib.mdb_env_close(_env!);
+      _env = nullptr;
+    }
+
+    _closed = true;
   }
 
   /// Returns analysis of current DB usage
@@ -94,10 +170,11 @@ class LMDB2 {
 
   // Transaction handling
   Future<Pointer<MDB_txn>> txnStart() async {
+    final currentEnv = env;
     final txnPtr = calloc<Pointer<MDB_txn>>();
     try {
       final result = _lib.mdb_txn_begin(
-        _env,
+        currentEnv,
         nullptr,
         0,
         txnPtr,
@@ -114,6 +191,12 @@ class LMDB2 {
   }
 
   Future<void> txnCommit(Pointer<MDB_txn> txn) async {
+    if (_closed) {
+      throw StateError('Cannot access closed database');
+    }
+    if (_env == null) {
+      throw StateError('Database not initialized');
+    }
     final result = _lib.mdb_txn_commit(txn);
     if (result != 0) {
       throw LMDBException('Failed to commit transaction', result);
@@ -121,11 +204,21 @@ class LMDB2 {
   }
 
   Future<void> txnAbort(Pointer<MDB_txn> txn) async {
+    if (_closed) {
+      throw StateError('Cannot access closed database');
+    }
+    if (_env == null) {
+      throw StateError('Database not initialized');
+    }
     _lib.mdb_txn_abort(txn);
   }
 
   // Base operations (require transaction)
   Future<void> put(Pointer<MDB_txn> txn, String key, List<int> value) async {
+    if (_closed) {
+      throw StateError('Cannot put data in closed database');
+    }
+
     final dbi = await _openDatabase(txn);
     final keyPtr = key.toNativeUtf8();
     final valuePtr = calloc<Uint8>(value.length);
@@ -166,6 +259,10 @@ class LMDB2 {
   }
 
   Future<List<int>?> get(Pointer<MDB_txn> txn, String key) async {
+    if (_closed) {
+      throw StateError('Cannot get data from closed database');
+    }
+
     final dbi = await _openDatabase(txn);
     final keyPtr = key.toNativeUtf8();
 
@@ -349,27 +446,27 @@ class LMDB2 {
     return ptr.cast<Utf8>().toDartString();
   }
 
-  /// Closes the database environment and releases all resources
-  void close() {
-    _lib.mdb_env_close(_env);
-  }
+  // Safeguard against use after close
+  bool get isClosed => _closed;
 
   /// Synchronizes the environment to disk
   Future<void> sync(bool force) async {
-    final result = _lib.mdb_env_sync(_env, force ? 1 : 0);
+    final currentEnv = env;
+    final result = _lib.mdb_env_sync(currentEnv, force ? 1 : 0);
     if (result != 0) {
       throw LMDBException('Failed to sync environment', result);
     }
   }
 
   Future<DatabaseStats> getStats() async {
+    final currentEnv = env;
     late final Pointer<MDB_txn> txn;
     try {
       // Starte Transaktion (read-only)
       final txnPtr = calloc<Pointer<MDB_txn>>();
       try {
         final result = _lib.mdb_txn_begin(
-          _env,
+          currentEnv,
           nullptr,
           MDB_RDONLY, // Read-only flag hinzufügen
           txnPtr,
@@ -428,6 +525,13 @@ class LMDB2 {
       }
     } finally {
       _lib.mdb_txn_abort(txn);
+    }
+  }
+
+  /// Clean up resources
+  void dispose() {
+    if (!_closed) {
+      close();
     }
   }
 }
