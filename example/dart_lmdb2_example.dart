@@ -7,7 +7,6 @@ void main() async {
   final config = LMDBInitConfig(
     mapSize: 10 * 1024 * 1024, // 10MB
     maxDbs: 1,
-    envFlags: 0,
     mode: "0664",
   );
 

@@ -15,7 +15,7 @@ void main() {
     testDir = Directory(path.join(
       Directory.current.path,
       'test_data',
-      'db_${DateTime.now().millisecondsSinceEpoch}',
+      'db_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(10000)}',
     ));
 
     // Ensure clean state

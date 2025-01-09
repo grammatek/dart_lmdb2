@@ -1,4 +1,3 @@
-import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'lmdb_native.dart';
 

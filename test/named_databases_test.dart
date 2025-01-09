@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:test/test.dart';
 import 'package:path/path.dart' as path;
 import 'package:dart_lmdb2/dart_lmdb2.dart';
@@ -12,7 +13,7 @@ void main() {
     testDir = Directory(path.join(
       Directory.current.path,
       'test_data',
-      'named_db_${DateTime.now().millisecondsSinceEpoch}',
+      'named_db_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(10000)}',
     ));
 
     if (testDir.existsSync()) {
