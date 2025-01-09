@@ -117,6 +117,7 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
       path.join(buildDir.path, 'lib', 'Release', libraryName),
       path.join(buildDir.path, 'Release', libraryName),
       path.join(buildDir.path, 'bin', 'Release', libraryName),
+      path.join(buildDir.path, 'bin', libraryName),
       path.join(buildDir.path, 'x64', 'Release', libraryName),
     ];
 
