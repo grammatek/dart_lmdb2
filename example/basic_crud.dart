@@ -21,7 +21,7 @@ void main() async {
       mapSize: LMDBConfig.minMapSize,
       maxDbs: 1,
       envFlags: 0,
-      mode: 0664,
+      mode: "0664",
     );
 
     await db.init(dbPath, config: config);

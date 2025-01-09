@@ -123,6 +123,22 @@ class DatabaseEfficiency {
   bool get isEfficient => averageEntriesPerLeafPage > 10 && !hasOverflow;
 }
 
+/// convert octal String into integer
+int parseOctalString(String octalStr) {
+  // remove any leading zeros or '0o'
+  octalStr = octalStr.replaceFirst(RegExp(r'^[0o]+'), '');
+
+  int result = 0;
+  for (int i = 0; i < octalStr.length; i++) {
+    int digit = int.parse(octalStr[i]);
+    if (digit >= 8) {
+      throw FormatException('invalid octal number given: $digit in $octalStr');
+    }
+    result = result * 8 + digit;
+  }
+  return result;
+}
+
 // Configuration class for database initialization
 class LMDBInitConfig {
   /// Maximum database size in bytes
@@ -131,17 +147,15 @@ class LMDBInitConfig {
   /// Maximum number of named databases
   final int maxDbs;
 
-  /// Environment flags
-  final int envFlags;
-
   /// File permissions (Unix)
-  final int mode;
+  final String mode;
+
+  int get modeAsInt => parseOctalString(mode);
 
   const LMDBInitConfig({
     required this.mapSize,
     this.maxDbs = 1,
-    this.envFlags = 0,
-    this.mode = 0664,
+    this.mode = "644",
   });
 
   /// Creates a configuration based on expected data characteristics
@@ -151,8 +165,7 @@ class LMDBInitConfig {
     required int averageValueSize,
     double overheadFactor = LMDBConfig.defaultOverheadFactor,
     int maxDbs = 1,
-    int envFlags = 0,
-    int mode = 0664,
+    int mode = 438, // 438 decimal == 644 octal
   }) {
     final mapSize = LMDBConfig.calculateMapSize(
       expectedEntries: expectedEntries,
@@ -164,8 +177,7 @@ class LMDBInitConfig {
     return LMDBInitConfig(
       mapSize: mapSize,
       maxDbs: maxDbs,
-      envFlags: envFlags,
-      mode: mode,
+      mode: mode.toRadixString(8),
     );
   }
 }
