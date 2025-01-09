@@ -43,6 +43,7 @@ set_target_properties(lmdb PROPERTIES
   VERSION 0.9.70
   SOVERSION 0
   PUBLIC_HEADER "src/include/lmdb.h;src/include/midl.h"
+  WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
 if(WIN32)
