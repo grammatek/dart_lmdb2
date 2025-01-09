@@ -27,9 +27,24 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
   print('Configuring CMake...');
   var result = await Process.run(
     'cmake',
-    ['-S', '.', '-B', 'build', '-DCMAKE_BUILD_TYPE=Release'],
+    [
+      '-S',
+      '.',
+      '-B',
+      'build',
+      '-DCMAKE_BUILD_TYPE=Release',
+      '--debug-output',
+      '-DCMAKE_VERBOSE_MAKEFILE=ON',
+    ],
     workingDirectory: projectDir.path,
   );
+
+  print('\nCMake configuration output:');
+  print(result.stdout);
+  if (result.stderr.toString().isNotEmpty) {
+    print('CMake configuration warnings/errors:');
+    print(result.stderr);
+  }
 
   if (result.exitCode != 0) {
     throw BuildException(
@@ -40,11 +55,44 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
 
   // Build
   print('Building...');
-  result = await Process.run(
-    'cmake',
-    ['--build', 'build', '--config', 'Release'],
-    workingDirectory: projectDir.path,
-  );
+
+  // Platform-specific build commands
+  if (Platform.isWindows) {
+    // For Visual Studio: Use /verbosity:detailed
+    result = await Process.run(
+      'cmake',
+      [
+        '--build', 'build',
+        '--config', 'Release',
+        '--verbose',
+        '--', // Pass following arguments to the native build tool
+        '/verbosity:normal',
+        '/p:PreferredToolArchitecture=x64', // Use 64-bit tools
+        '/clp:ShowCommandLine', // Show complete command lines
+      ],
+      workingDirectory: projectDir.path,
+    );
+  } else {
+    // For Unix makefiles: Use VERBOSE=1
+    result = await Process.run(
+      'cmake',
+      [
+        '--build', 'build',
+        '--config', 'Release',
+        '--verbose',
+        '--', // Pass following arguments to the native build tool
+        'VERBOSE=1', // Show complete command lines
+      ],
+      workingDirectory: projectDir.path,
+    );
+  }
+
+  print('\nBuild output:');
+  print(result.stdout);
+  if (result.stderr.toString().isNotEmpty) {
+    print('Build warnings/errors:');
+    print(result.stderr);
+  }
 
   if (result.exitCode != 0) {
     throw BuildException(
@@ -61,7 +109,36 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
   }
 
   final String libraryName = _getPlatformLibraryName();
-  final builtLib = File(path.join(buildDir.path, 'lib', libraryName));
+  final File builtLib;
+
+  if (Platform.isWindows) {
+    // Windows legt die DLL in verschiedene mögliche Verzeichnisse
+    final possiblePaths = [
+      path.join(buildDir.path, 'lib', 'Release', libraryName),
+      path.join(buildDir.path, 'Release', libraryName),
+      path.join(buildDir.path, 'bin', 'Release', libraryName),
+      path.join(buildDir.path, 'bin', libraryName),
+      path.join(buildDir.path, 'x64', 'Release', libraryName),
+    ];
+
+    builtLib = possiblePaths.map((p) => File(p)).firstWhere(
+      (f) => f.existsSync(),
+      orElse: () {
+        print('Searched for library in:');
+        for (final p in possiblePaths) {
+          print('  $p');
+        }
+        throw BuildException(
+          'Could not find built library. Searched in: ${possiblePaths.join(", ")}',
+          1,
+        );
+      },
+    );
+  } else {
+    // Unix-ähnliche Systeme
+    builtLib = File(path.join(buildDir.path, 'lib', libraryName));
+  }
+
   final targetLib = File(path.join(libDir.path, libraryName));
 
   if (builtLib.existsSync()) {
