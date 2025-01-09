@@ -66,8 +66,9 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
         '--config', 'Release',
         '--verbose',
         '--', // Pass following arguments to the native build tool
-        '/verbosity:detailed', // Detailed VS output
+        '/verbosity:normal',
         '/p:PreferredToolArchitecture=x64', // Use 64-bit tools
+        '/clp:ShowCommandLine', // Show complete command lines
       ],
       workingDirectory: projectDir.path,
     );
