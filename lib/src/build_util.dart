@@ -27,9 +27,24 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
   print('Configuring CMake...');
   var result = await Process.run(
     'cmake',
-    ['-S', '.', '-B', 'build', '-DCMAKE_BUILD_TYPE=Release'],
+    [
+      '-S',
+      '.',
+      '-B',
+      'build',
+      '-DCMAKE_BUILD_TYPE=Release',
+      '--debug-output',
+      '-DCMAKE_VERBOSE_MAKEFILE=ON',
+    ],
     workingDirectory: projectDir.path,
   );
+
+  print('\nCMake configuration output:');
+  print(result.stdout);
+  if (result.stderr.toString().isNotEmpty) {
+    print('CMake configuration warnings/errors:');
+    print(result.stderr);
+  }
 
   if (result.exitCode != 0) {
     throw BuildException(
@@ -40,11 +55,43 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
 
   // Build
   print('Building...');
-  result = await Process.run(
-    'cmake',
-    ['--build', 'build', '--config', 'Release'],
-    workingDirectory: projectDir.path,
-  );
+
+  // Platform-specific build commands
+  if (Platform.isWindows) {
+    // For Visual Studio: Use /verbosity:detailed
+    result = await Process.run(
+      'cmake',
+      [
+        '--build', 'build',
+        '--config', 'Release',
+        '--verbose',
+        '--', // Pass following arguments to the native build tool
+        '/verbosity:detailed', // Detailed VS output
+        '/p:PreferredToolArchitecture=x64', // Use 64-bit tools
+      ],
+      workingDirectory: projectDir.path,
+    );
+  } else {
+    // For Unix makefiles: Use VERBOSE=1
+    result = await Process.run(
+      'cmake',
+      [
+        '--build', 'build',
+        '--config', 'Release',
+        '--verbose',
+        '--', // Pass following arguments to the native build tool
+        'VERBOSE=1', // Show complete command lines
+      ],
+      workingDirectory: projectDir.path,
+    );
+  }
+
+  print('\nBuild output:');
+  print(result.stdout);
+  if (result.stderr.toString().isNotEmpty) {
+    print('Build warnings/errors:');
+    print(result.stderr);
+  }
 
   if (result.exitCode != 0) {
     throw BuildException(
