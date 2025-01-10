@@ -96,6 +96,38 @@
 /// );
 /// ```
 ///
+/// # LMDB MapSize Behavior
+///
+/// The MapSize in LMDB determines the maximum database size and behaves as follows:
+///
+/// 1. Read-Only Access:
+/// - Databases can be opened with any MapSize (even smaller) in read-only mode
+/// - Perfect for use cases like dictionaries or lookups where only reading is required
+/// - The actual DB size can be determined using statsAuto()
+///
+/// 2. Write Access:
+/// - MapSize must be at least as large as the current DB size
+/// - Write operations will fail with MDB_MAP_FULL when MapSize limit is reached
+/// - MapSize can only be set when opening the DB, not during runtime
+///
+/// 3. Size Adjustment:
+/// - A DB can be reopened with larger MapSize to allow growth
+/// - It's recommended to reserve more MapSize than currently needed
+/// - Typical pattern: Open read-only to check size -> Close -> Reopen with proper MapSize
+///
+/// Example Usage:
+/// ```dart
+///     final db = LMDB2();
+///     // Open with 100MB initial size
+///     await db.init(path, config: LMDBInitConfig(mapSize: 100 * 1024 * 1024));
+/// ```
+///
+/// Note: MapSize can be important for performance and resource management. Choose it based on:
+/// - Expected data growth
+/// - Available system resources
+/// - Application requirements
+/// - Even with small MapSize (e.g. 1MB for a 100MB DB), LMDB maintains very good performance !
+///
 /// # Monitoring and Analysis
 ///
 /// Track database health and performance:
