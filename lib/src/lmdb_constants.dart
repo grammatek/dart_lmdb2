@@ -17,6 +17,9 @@ const MDB_NOMETASYNC = bindings.MDB_NOMETASYNC;
 
 /// Use a writeable memory map instead of malloc/msync. This is faster but makes the
 /// system more vulnerable to crashes.
+///
+/// Note: **This feature is experimental on Windows and explecitly disabled inside
+///        the test suite for that platform.**
 const MDB_WRITEMAP = bindings.MDB_WRITEMAP;
 
 /// When using [MDB_WRITEMAP], use asynchronous flushes to disk.

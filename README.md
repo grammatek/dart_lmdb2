@@ -1,52 +1,88 @@
 # dart_lmdb2
 
-A Dart wrapper for LMDB (Lightning Memory-Mapped Database), providing both high-level convenience methods and low-level transaction control.
+A high-performance, embedded database solution for Dart applications, wrapping LMDB (Lightning Memory-Mapped Database). This package provides both high-level convenience methods and granular transaction control.
 
-The following LMDB functionality is supported:
+## Why LMDB?
 
-- Basic CRUD operations
-- Named DB's
-- Transactions
-- Statistics
-- Opening/Creation with all supported flags
+LMDB is particularly well-suited for mobile and embedded applications because:
 
-Not yet supported:
+- Mobile-Friendly Design:
+  - Database format is portable across all platforms
+  - Battery-efficient through memory mapping and minimal I/O operations
+  - No background processes or services required
+  - Predictable memory usage through configurable mapping size
+  - Instant app startup with lazy data loading
 
-- Cursors
-- Statistics including freelist
-- ???
+- Minimal Resource Requirements:
+  - Ultra-compact native library (<150KB)
+  - Configurable memory ceiling with fixed mapSize limit
+  - Single-threaded design with minimal process overhead
+  - No additional runtime dependencies
 
-Currently, only a subset of LMDB features are exposed to Dart, but it's relatively straight-forward to expose more functionality as demand increases.
+- Exceptional Performance:
+  - Zero-copy reads through direct memory mapping
+  - Efficient OS-level page caching eliminates I/O bottlenecks
+  - Optimized for read operations through direct memory access
 
-The LMDB version bundled with this package is: `0.9.70`, but this version hasn't updated since 3 years, although the package is regularly updated. Therefore, we provide additionally the exact git repository version of `LMDB`, which is [da9aeda](https://github.com/LMDB/lmdb/commit/da9aeda08c3ff710a0d47d61a079f5a905b0a10a).
+- Reliability:
+  - Full ACID compliance with atomic, crash-resistant transactions
+  - Copy-on-write design ensures database integrity even after crashes
+  - Direct page updates without separate log files
+  - Optional self-contained single file design simplifies backup operations
+  - Battle-tested in OpenLDAP
 
+## Supported Features
 
-## Features
+The following LMDB functionality is exposed:
 
-LMDB:
+- Complete CRUD operations
+- Named databases for data organization
+- Full transaction support with ACID guarantees
+- Comprehensive statistics and monitoring
+- Configurable initialization with all LMDB flags
 
-* High-performance, light-weight and battle-testetd database (from OpenLDAP)
-* ACID conformant
-* Durable even in case of crashes or sudden device shutdown (atomic commits)
-* Write-ahead logging
-* Fixed memory constraints via settable memory-mapped window
-* Key/Value semantics, supports arbitrary binary data for keys/values
-* Queryable keys via prefix-search
-* Database can have multiple readers/writers from different processes/threads
-* Readers don't block writers; writers just block other writers
-* Platform-independent data format
-* Very compact C-code (~10K LOC)
+## Current Limitations
 
-Dart LMDB2:
+Features not yet implemented:
 
-* Partial LMDB functionality exposed through Dart FFI
-* Both automatic and manual transaction control
-* Proper resource management
-* Configurable database settings
-* DB Statistics and analysis
-* Native performance
-* Unit tests for all exposed functions
-* Multi-platform CI builds
+- Cursor operations for range queries
+- Extended statistics including freelist
+- Nested databases
+- Multiple named databases in single transaction
+
+Adding these features is straightforward and can be implemented based on demand.
+
+## Version Information
+
+This package bundles LMDB version `0.9.70`. While this version number hasn't changed in 3 years, LMDB is actively maintained. We track the exact git repository version: [da9aeda](https://github.com/LMDB/lmdb/commit/da9aeda08c3ff710a0d47d61a079f5a905b0a10a).
+
+## Core Features
+
+LMDB Core:
+
+- Battle-tested database engine (from OpenLDAP)
+- ACID-compliant transactions
+- Crash-resistant with atomic commits
+- No write-ahead logging needed
+- Controlled memory usage via memory mapping
+- Flexible key/value storage supporting binary data
+- Prefix-based key queries
+- Multi-process/thread support
+- Non-blocking readers
+- Platform-independent data format
+- Minimal, efficient C implementation
+
+Dart LMDB2 Wrapper:
+
+- Efficient FFI integration for native performance
+- Flexible transaction management (auto/manual)
+- Safe resource handling and cleanup
+- Configurable database parameters
+- Comprehensive statistics and analysis
+- Cross-platform support
+- Extensive test coverage
+- CI/CD integration
+
 
 ## Getting Started
 
@@ -61,7 +97,7 @@ dependencies:
 Import and use:
 
 ```dart
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:lmdb2/lmdb2.dart';
 
 void main() async {
     final db = LMDB2();

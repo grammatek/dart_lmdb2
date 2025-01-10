@@ -11,6 +11,47 @@ import 'lmdb_config.dart';
 import 'lmdb_flags.dart';
 import 'lmdb_native.dart';
 
+/// A high-level Dart interface for LMDB (Lightning Memory-Mapped Database).
+///
+/// LMDB2 provides a Dart-friendly API for interacting with LMDB, featuring:
+/// * Automatic transaction management
+/// * UTF-8 string support
+/// * Named databases
+/// * Comprehensive statistics and analysis
+///
+/// Basic usage:
+/// ```dart
+/// final db = LMDB2();
+///
+/// // Initialize the database
+/// await db.init('/path/to/db');
+///
+/// // Store some data
+/// await db.putUtf8Auto('key', 'value');
+///
+/// // Retrieve data
+/// final value = await db.getUtf8Auto('key');
+/// print(value); // Prints: value
+///
+/// // Clean up
+/// db.close();
+/// ```
+///
+/// Advanced usage with explicit transactions:
+/// ```dart
+/// final db = LMDB2();
+/// await db.init('/path/to/db');
+///
+/// final txn = await db.txnStart();
+/// try {
+///   await db.putUtf8(txn, 'key1', 'value1');
+///   await db.putUtf8(txn, 'key2', 'value2');
+///   await db.txnCommit(txn);
+/// } catch (e) {
+///   await db.txnAbort(txn);
+///   rethrow;
+/// }
+/// ```
 class LMDB2 {
   /// Native library bindings
   late final NativeLibrary _lib;
@@ -29,6 +70,7 @@ class LMDB2 {
   /// Cache for database handles
   final Map<String, int> _dbiCache = {};
 
+  /// Checks if the database has been initialized.
   bool get isInitialized => _env != null;
 
   /// Safe accessor for the environment pointer
@@ -41,7 +83,9 @@ class LMDB2 {
     return _env!;
   }
 
-  /// Creates a new LMDB instance and loads the native library
+  /// Creates a new LMDB instance and loads the native library.
+  ///
+  /// Note: Call [init] before performing any database operations.
   LMDB2() {
     _lib = LMDBNative.instance.lib;
   }
@@ -211,7 +255,10 @@ class LMDB2 {
     }, calloc<Pointer<MDB_env>>());
   }
 
-  /// Close the database and release resources
+  /// Closes the database and releases all resources.
+  ///
+  /// After calling close, the database must be re-initialized
+  /// before it can be used again.
   void close() {
     if (_env != null) {
       _lib.mdb_env_close(_env!);
@@ -220,18 +267,93 @@ class LMDB2 {
     }
   }
 
-  /// Returns analysis of current DB usage
+  /// Analyzes current database usage and returns a formatted report.
+  ///
+  /// Example:
+  /// ```dart
+  /// final analysis = await db.analyzeUsage();
+  /// print(analysis);
+  /// // Prints detailed statistics about database structure
+  /// ```
   Future<String> analyzeUsage() async {
     final stats = await getStats();
     return LMDBConfig.analyzeUsage(stats);
   }
 
-  /// Starts a new transaction
+  /// Starts a new LMDB transaction.
   ///
-  /// [parent] Optional parent transaction for nested transactions
-  /// [flags] Optional additional flags for the transaction
-  /// Returns pointer to the new transaction
+  /// A transaction represents a coherent set of changes to the database.
+  /// All database operations must be performed within a transaction.
   ///
+  /// Parameters:
+  /// * [parent] - Optional parent transaction for nested transactions
+  /// * [flags] - Optional flags to modify transaction behavior
+  ///
+  /// Common flags:
+  /// * MDB_RDONLY - Read-only transaction (better performance, multiple readers allowed)
+  /// * MDB_NOSYNC - Don't sync on commit (better performance but less safe)
+  ///
+  /// Example usage patterns:
+  /// ```dart
+  /// // 1. Basic read-write transaction
+  /// final txn = await db.txnStart();
+  /// try {
+  ///   await db.putUtf8(txn, 'key', 'value');
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  ///
+  /// // 2. Read-only transaction
+  /// final readTxn = await db.txnStart(
+  ///   flags: LMDBFlagSet()..add(MDB_RDONLY)
+  /// );
+  /// try {
+  ///   final value = await db.getUtf8(readTxn, 'key');
+  ///   await db.txnCommit(readTxn);
+  /// } catch (e) {
+  ///   await db.txnAbort(readTxn);
+  ///   rethrow;
+  /// }
+  ///
+  /// // 3. Nested transaction
+  /// final parentTxn = await db.txnStart();
+  /// try {
+  ///   await db.putUtf8(parentTxn, 'key1', 'value1');
+  ///
+  ///   // Start a child transaction
+  ///   final childTxn = await db.txnStart(parent: parentTxn);
+  ///   try {
+  ///     await db.putUtf8(childTxn, 'key2', 'value2');
+  ///     await db.txnCommit(childTxn);
+  ///   } catch (e) {
+  ///     await db.txnAbort(childTxn);
+  ///     rethrow;
+  ///   }
+  ///
+  ///   await db.txnCommit(parentTxn);
+  /// } catch (e) {
+  ///   await db.txnAbort(parentTxn);
+  ///   rethrow;
+  /// }
+  /// ```
+  ///
+  /// Important notes:
+  /// * Always pair txnStart with either txnCommit or txnAbort
+  /// * Use try-catch blocks to ensure proper transaction handling
+  /// * Read-only transactions can run concurrently
+  /// * Only one write transaction can be active at a time
+  /// * Child transactions can only be created from write transactions
+  /// * Child transactions must be committed/aborted before parent transactions
+  ///
+  /// Performance tips:
+  /// * Use read-only transactions when possible
+  /// * Keep transactions as short as possible
+  /// * Consider using MDB_NOSYNC for better write performance
+  /// * Use the Auto methods for simple operations
+  ///
+  /// Throws [StateError] if database is not initialized
   /// Throws [LMDBException] if transaction cannot be started
   Future<Pointer<MDB_txn>> txnStart({
     Pointer<MDB_txn>? parent,
@@ -258,10 +380,39 @@ class LMDB2 {
     }
   }
 
-  /// Commits a transaction
+  /// Commits a transaction and makes all its changes permanent.
   ///
-  /// [txn] The transaction to commit
+  /// After a successful commit:
+  /// * All changes made in the transaction become permanent
+  /// * The transaction handle becomes invalid
+  /// * Child transactions (if any) become invalid
   ///
+  /// Parameters:
+  /// * [txn] - Transaction to commit
+  ///
+  /// Example with error handling:
+  /// ```dart
+  /// final txn = await db.txnStart();
+  /// try {
+  ///   // Perform multiple operations in one transaction
+  ///   await db.putUtf8(txn, 'user:1', '{"name": "John"}');
+  ///   await db.putUtf8(txn, 'user:2', '{"name": "Jane"}');
+  ///
+  ///   // Make all changes permanent
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   // On any error, abort the transaction
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  /// ```
+  ///
+  /// Important notes:
+  /// * The transaction handle must not be used after commit
+  /// * Always use try-catch with txnAbort in the catch block
+  /// * Commit is atomic - either all changes succeed or none do
+  ///
+  /// Throws [StateError] if database is not initialized
   /// Throws [LMDBException] if commit fails
   Future<void> txnCommit(Pointer<MDB_txn> txn) async {
     if (!isInitialized) throw StateError(_errDbNotInitialized);
@@ -272,9 +423,59 @@ class LMDB2 {
     }
   }
 
-  /// Aborts a transaction
+  /// Aborts a transaction and rolls back all its changes.
   ///
-  /// [txn] The transaction to abort
+  /// After abort:
+  /// * All changes made in the transaction are discarded
+  /// * The transaction handle becomes invalid
+  /// * Child transactions (if any) become invalid
+  ///
+  /// Parameters:
+  /// * [txn] - Transaction to abort
+  ///
+  /// Example usage patterns:
+  /// ```dart
+  /// // 1. In catch block (most common)
+  /// final txn = await db.txnStart();
+  /// try {
+  ///   await db.putUtf8(txn, 'key', 'value');
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  ///
+  /// // 2. Explicit rollback
+  /// final txn = await db.txnStart();
+  /// await db.putUtf8(txn, 'key', 'value');
+  /// if (shouldRollback) {
+  ///   await db.txnAbort(txn);
+  ///   return;
+  /// }
+  /// await db.txnCommit(txn);
+  ///
+  /// // 3. In finally block for nested transactions
+  /// final parentTxn = await db.txnStart();
+  /// try {
+  ///   final childTxn = await db.txnStart(parent: parentTxn);
+  ///   try {
+  ///     // ... operations
+  ///     await db.txnCommit(childTxn);
+  ///   } finally {
+  ///     await db.txnAbort(childTxn);
+  ///   }
+  ///   await db.txnCommit(parentTxn);
+  /// } catch (e) {
+  ///   await db.txnAbort(parentTxn);
+  ///   rethrow;
+  /// }
+  /// ```
+  ///
+  /// Important notes:
+  /// * The transaction handle must not be used after abort
+  /// * Abort is safe to call multiple times (subsequent calls have no effect)
+  /// * Abort should always be called in catch blocks
+  /// * Child transactions must be aborted before parent transactions
   Future<void> txnAbort(Pointer<MDB_txn> txn) async {
     if (!isInitialized) throw StateError(_errDbNotInitialized);
     _lib.mdb_txn_abort(txn);
@@ -303,15 +504,28 @@ class LMDB2 {
     }
   }
 
-  /// Stores a value in the database
+  /// Stores a raw byte value in the database.
   ///
-  /// [txn] Transaction to use
-  /// [key] Key to store under
-  /// [value] Value to store
-  /// [dbName] Optional database name
-  /// [flags] Optional operation flags
+  /// Parameters:
+  /// * [txn] - Active transaction
+  /// * [key] - String key under which to store the value
+  /// * [value] - Raw bytes to store
+  /// * [dbName] - Optional named database. If not provided, the default database will be used.
+  /// * [flags] - Optional operation flags
   ///
-  /// Throws [StateError] if database is closed
+  /// Example:
+  /// ```dart
+  /// final txn = await db.txnStart();
+  /// try {
+  ///   await db.put(txn, 'key', [1, 2, 3, 4]);
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  /// ```
+  ///
+  /// Throws [StateError] if database is not initialized
   /// Throws [LMDBException] if operation fails
   Future<void> put(
     Pointer<MDB_txn> txn,
@@ -322,7 +536,7 @@ class LMDB2 {
   }) async {
     if (!isInitialized) throw StateError(_errDbNotInitialized);
 
-    final dbi = await getDatabase(txn, name: dbName, flags: flags);
+    final dbi = await _getDatabase(txn, name: dbName, flags: flags);
     final keyPtr = key.toNativeUtf8();
     final valuePtr = calloc<Uint8>(value.length);
 
@@ -357,17 +571,30 @@ class LMDB2 {
     }
   }
 
-  /// Retrieves a value from the database
+  /// Retrieves a raw byte value from the database.
   ///
-  /// [txn] Transaction to use
-  /// [key] Key to retrieve
-  /// [dbName] Optional database name
-  /// [flags] Optional operation flags
+  /// Parameters:
+  /// * [txn] - Active transaction
+  /// * [key] - Key to retrieve
+  /// * [dbName] - Optional named database. If not provided, the default database will be used.
+  /// * [flags] - Optional operation flags
   ///
-  /// Returns the value as byte list, or null if not found
+  /// Returns the value as byte list, or null if not found.
   ///
-  /// Throws [StateError] if database is closed
-  /// Throws [LMDBException] if operation fails
+  /// Example:
+  /// ```dart
+  /// final txn = await db.txnStart(flags: LMDBFlagSet()..add(MDB_RDONLY));
+  /// try {
+  ///   final bytes = await db.get(txn, 'key');
+  ///   if (bytes != null) {
+  ///     print('Value: $bytes');
+  ///   }
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  /// ```
   Future<List<int>?> get(
     Pointer<MDB_txn> txn,
     String key, {
@@ -376,7 +603,7 @@ class LMDB2 {
   }) async {
     if (!isInitialized) throw StateError(_errDbNotInitialized);
 
-    final dbi = await getDatabase(txn, name: dbName, flags: flags);
+    final dbi = await _getDatabase(txn, name: dbName, flags: flags);
     final keyPtr = key.toNativeUtf8();
 
     try {
@@ -407,15 +634,27 @@ class LMDB2 {
     }
   }
 
-  /// Deletes a value from the database
+  /// Deletes a value from the database.
   ///
-  /// [txn] Transaction to use
-  /// [key] Key to delete
-  /// [dbName] Optional database name
-  /// [flags] Optional operation flags
+  /// Parameters:
+  /// * [txn] - Active transaction
+  /// * [key] - Key to delete
+  /// * [dbName] - Optional named database. If not provided, the default database will be used.
+  /// * [flags] - Optional operation flags
   ///
-  /// Throws [StateError] if database is closed
-  /// Throws [LMDBException] if operation fails (except when key not found)
+  /// Example:
+  /// ```dart
+  /// final txn = await db.txnStart();
+  /// try {
+  ///   await db.delete(txn, 'key');
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  /// ```
+  ///
+  /// Note: Does not throw if key doesn't exist
   Future<void> delete(
     Pointer<MDB_txn> txn,
     String key, {
@@ -424,7 +663,7 @@ class LMDB2 {
   }) async {
     if (!isInitialized) throw StateError(_errDbNotInitialized);
 
-    final dbi = await getDatabase(txn, name: dbName, flags: flags);
+    final dbi = await _getDatabase(txn, name: dbName, flags: flags);
     final keyPtr = key.toNativeUtf8();
 
     try {
@@ -521,12 +760,22 @@ class LMDB2 {
 
   /// Convenience methods with automatic transaction management
 
-  /// Stores a value with automatic transaction management
+  /// Stores a raw byte value with automatic transaction management.
   ///
-  /// [key] Key to store under
-  /// [value] Value to store
-  /// [dbName] Optional database name
-  /// [flags] Optional operation flags
+  /// This is a convenience method that handles transaction creation,
+  /// commit, and error handling automatically.
+  ///
+  /// Parameters:
+  /// * [key] - Key under which to store the value
+  /// * [value] - Raw bytes to store
+  /// * [dbName] - Optional named database
+  /// * [flags] - Optional operation flags
+  ///
+  /// Example:
+  /// ```dart
+  /// // Simple storage without manual transaction handling
+  /// await db.putAuto('key', [1, 2, 3, 4]);
+  /// ```
   ///
   /// Throws [StateError] if database is closed
   /// Throws [LMDBException] if operation fails
@@ -541,12 +790,23 @@ class LMDB2 {
     );
   }
 
-  /// Retrieves a value with automatic transaction management
+  /// Retrieves a raw byte value with automatic transaction management.
   ///
-  /// [key] Key to retrieve
-  /// [dbName] Optional database name
+  /// Uses an automatic read-only transaction.
   ///
-  /// Returns the value as byte list, or null if not found
+  /// Parameters:
+  /// * [key] - Key to retrieve
+  /// * [dbName] - Optional named database
+  ///
+  /// Returns the value as byte list, or null if not found.
+  ///
+  /// Example:
+  /// ```dart
+  /// final bytes = await db.getAuto('key');
+  /// if (bytes != null) {
+  ///   print('Retrieved ${bytes.length} bytes');
+  /// }
+  /// ```
   ///
   /// Throws [StateError] if database is closed
   /// Throws [LMDBException] if operation fails
@@ -560,11 +820,16 @@ class LMDB2 {
     );
   }
 
-  /// Deletes a value with automatic transaction management
+  /// Deletes a value with automatic transaction management.
   ///
-  /// [key] Key to delete
-  /// [dbName] Optional database name
+  /// Parameters:
+  /// * [key] - Key to delete
+  /// * [dbName] - Optional named database
   ///
+  /// Example:
+  /// ```dart
+  /// await db.deleteAuto('key');
+  /// ```
   /// Throws [StateError] if database is closed
   /// Throws [LMDBException] if operation fails
   Future<void> deleteAuto(
@@ -576,7 +841,10 @@ class LMDB2 {
     );
   }
 
-  /// Stores a UTF-8 encoded string value using an automatic transaction
+  /// Stores a UTF-8 string with automatic transaction management.
+  ///
+  /// Perfect for simple string storage operations where manual
+  /// transaction control isn't needed.
   ///
   /// The [key] is used as UTF-8 encoded database key.
   /// The [value] string will be UTF-8 encoded before storage.
@@ -612,7 +880,9 @@ class LMDB2 {
     });
   }
 
-  /// Retrieves a UTF-8 encoded string value using an automatic read-only transaction
+  /// Retrieves a UTF-8 string with automatic transaction management.
+  ///
+  /// Uses an automatic read-only transaction.
   ///
   /// The [key] is used as UTF-8 encoded database key.
   ///
@@ -650,12 +920,20 @@ class LMDB2 {
     }, flags: LMDBFlagSet.readOnly);
   }
 
-  /// Gets statistics with automatic transaction management
+  /// Gets database statistics with automatic transaction management.
   ///
-  /// [dbName] Optional database name
-  /// [flags] Optional operation flags
+  /// Parameters:
+  /// * [dbName] - Optional named database
+  /// * [flags] - Optional operation flags
   ///
-  /// Returns database statistics
+  /// Returns detailed statistics about the database structure.
+  ///
+  /// Example:
+  /// ```dart
+  /// final stats = await db.statsAuto();
+  /// print('Total entries: ${stats.entries}');
+  /// print('Tree depth: ${stats.depth}');
+  /// ```
   ///
   /// Throws [StateError] if database is closed
   /// Throws [LMDBException] if operation fails
@@ -669,13 +947,28 @@ class LMDB2 {
     );
   }
 
-  /// Gets statistics for a database
+  /// Gets statistics for a specific database using an explicit transaction.
   ///
-  /// [txn] Transaction to use
-  /// [dbName] Optional database name
-  /// [flags] Optional operation flags
+  /// Parameters:
+  /// * [txn] - Active transaction
+  /// * [dbName] - Optional named database
+  /// * [flags] - Optional operation flags
   ///
-  /// Returns statistics for the specified database
+  /// Returns detailed database statistics.
+  ///
+  /// Example:
+  /// ```dart
+  /// final txn = await db.txnStart(flags: LMDBFlagSet()..add(MDB_RDONLY));
+  /// try {
+  ///   final stats = await db.stats(txn);
+  ///   print('Entries: ${stats.entries}');
+  ///   print('Tree depth: ${stats.depth}');
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  /// ```
   ///
   /// Throws [StateError] if database is closed
   /// Throws [LMDBException] if operation fails
@@ -686,7 +979,7 @@ class LMDB2 {
   }) async {
     if (!isInitialized) throw StateError(_errDbNotInitialized);
 
-    final dbi = await getDatabase(txn, name: dbName, flags: flags);
+    final dbi = await _getDatabase(txn, name: dbName, flags: flags);
     final statPtr = calloc<MDB_stat>();
 
     try {
@@ -796,7 +1089,7 @@ class LMDB2 {
   /// [flags] Optional flags for database operations
   ///
   /// Returns database handle (dbi)
-  Future<int> getDatabase(
+  Future<int> _getDatabase(
     Pointer<MDB_txn> txn, {
     String? name,
     LMDBFlagSet? flags,
@@ -812,7 +1105,18 @@ class LMDB2 {
     return _openDatabase(txn, name: name, flags: flags);
   }
 
-  /// Lists all named databases in the environment
+  /// Lists all named databases in the environment.
+  ///
+  /// Returns a list of database names that have been created.
+  /// The default unnamed database is not included in this list.
+  ///
+  /// Example:
+  /// ```dart
+  /// final databases = await db.listDatabases();
+  /// for (final dbName in databases) {
+  ///   print('Found database: $dbName');
+  /// }
+  /// ```
   Future<List<String>> listDatabases() async {
     final txn = await txnStart();
     try {
@@ -825,7 +1129,15 @@ class LMDB2 {
     }
   }
 
-  /// Gets the version of the LMDB library
+  /// Gets the version string of the LMDB library.
+  ///
+  /// Returns the version in format "LMDB x.y.z".
+  ///
+  /// Example:
+  /// ```dart
+  /// final version = db.getVersion();
+  /// print('Using LMDB version: $version');
+  /// ```
   String getVersion() {
     final major = calloc<Int>();
     final minor = calloc<Int>();
@@ -841,13 +1153,43 @@ class LMDB2 {
     }
   }
 
-  /// Gets an error string for the given error code
+  /// Gets a human-readable error string for an LMDB error code.
+  ///
+  /// Parameters:
+  /// * [err] - LMDB error code
+  ///
+  /// Returns a descriptive error message.
+  ///
+  /// Example:
+  /// ```dart
+  /// try {
+  ///   // ... some operation
+  /// } catch (e) {
+  ///   if (e is LMDBException) {
+  ///     print('Error: ${db.getErrorString(e.errorCode)}');
+  ///   }
+  /// }
+  /// ```
   String getErrorString(int err) {
     final ptr = _lib.mdb_strerror(err);
     return ptr.cast<Utf8>().toDartString();
   }
 
-  /// Synchronizes the environment to disk
+  /// Synchronizes the environment to disk.
+  ///
+  /// Parameters:
+  /// * [force] - If true, forces a synchronous flush
+  ///
+  /// Use this to ensure all changes are written to disk.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Normal async sync
+  /// await db.sync(false);
+  ///
+  /// // Force immediate sync
+  /// await db.sync(true);
+  /// ```
   Future<void> sync(bool force) async {
     final currentEnv = env;
     final result = _lib.mdb_env_sync(currentEnv, force ? 1 : 0);
@@ -980,12 +1322,26 @@ class LMDB2 {
     }
   }
 
-  /// Gets statistics for all databases in the environment
+  /// Gets statistics for all databases in the environment.
   ///
-  /// Returns a map where:
-  /// - 'environment' key contains overall environment statistics
-  /// - 'default' key contains default database statistics
-  /// - Other keys are named databases with their respective statistics
+  /// Returns a map with statistics for:
+  /// * 'environment' - Overall environment stats
+  /// * 'default' - Default database stats
+  /// * Named databases - Stats for each named database
+  ///
+  /// Example:
+  /// ```dart
+  /// final allStats = await db.getAllDatabaseStats();
+  /// print('Environment entries: ${allStats['environment']?.entries}');
+  /// print('Default DB entries: ${allStats['default']?.entries}');
+  ///
+  /// // Stats for named databases
+  /// allStats.forEach((name, stats) {
+  ///   if (name != 'environment' && name != 'default') {
+  ///     print('DB $name entries: ${stats.entries}');
+  ///   }
+  /// });
+  /// ```
   ///
   /// Throws [StateError] if database is closed
   /// Throws [LMDBException] if operation fails
@@ -1009,7 +1365,21 @@ class LMDB2 {
     }, flags: LMDBFlagSet.readOnly);
   }
 
-  /// Clean up resources
+  /// Cleans up resources and closes the database.
+  ///
+  /// This is equivalent to calling [close] and should be called
+  /// when the database is no longer needed.
+  ///
+  /// Example:
+  /// ```dart
+  /// final db = LMDB2();
+  /// try {
+  ///   await db.init('/path/to/db');
+  ///   // ... use database
+  /// } finally {
+  ///   db.dispose();
+  /// }
+  /// ```
   void dispose() {
     if (isInitialized) {
       close();
