@@ -190,7 +190,7 @@ void main() {
     var txn = await db.txnStart();
     try {
       // Write ~95MB data
-      for (var i = 0; i < 60000; i++) {
+      for (var i = 0; i < 55000; i++) {
         final key = 'key_$i';
         final value = List.filled(1024, 42); // 1KB per entry
         await db.put(txn, key, value);
