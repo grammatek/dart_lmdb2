@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 
@@ -447,6 +448,77 @@ class LMDB2 {
     }
   }
 
+  /// Stores a UTF-8 encoded string value in the database
+  ///
+  /// The [key] is used as UTF-8 encoded database key.
+  /// The [value] string will be UTF-8 encoded before storage.
+  ///
+  /// The optional [dbName] parameter specifies a named database.
+  /// If not provided, the default database will be used.
+  ///
+  /// The optional [flags] parameter allows setting specific LMDB flags for this operation.
+  ///
+  /// Example:
+  /// ```dart
+  /// final txn = await db.txnStart();
+  /// try {
+  ///   await db.putUtf8(txn, 'user_123', '{"name": "John", "age": 30}');
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  /// ```
+  ///
+  /// Throws [StateError] if the database is closed.
+  /// Throws [LMDBException] if the operation fails.
+  Future<void> putUtf8(
+    Pointer<MDB_txn> txn,
+    String key,
+    String value, {
+    String? dbName,
+    LMDBFlagSet? flags,
+  }) async {
+    await put(txn, key, utf8.encode(value), dbName: dbName, flags: flags);
+  }
+
+  /// Retrieves a UTF-8 encoded string value from the database
+  ///
+  /// The [key] is used as UTF-8 encoded database key.
+  ///
+  /// The optional [dbName] parameter specifies a named database.
+  /// If not provided, the default database will be used.
+  ///
+  /// Returns the decoded UTF-8 string value, or null if the key doesn't exist.
+  ///
+  /// Example:
+  /// ```dart
+  /// final txn = await db.txnStart(flags: LMDBFlagSet()..add(MDB_RDONLY));
+  /// try {
+  ///   final json = await db.getUtf8(txn, 'user_123');
+  ///   if (json != null) {
+  ///     final userData = jsonDecode(json);
+  ///     print('User name: ${userData['name']}');
+  ///   }
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  /// ```
+  ///
+  /// Throws [StateError] if the database is closed.
+  /// Throws [LMDBException] if the operation fails.
+  /// Throws [FormatException] if the stored data is not valid UTF-8.
+  Future<String?> getUtf8(
+    Pointer<MDB_txn> txn,
+    String key, {
+    String? dbName,
+  }) async {
+    final result = await get(txn, key, dbName: dbName);
+    return result != null ? utf8.decode(result) : null;
+  }
+
   /// Convenience methods with automatic transaction management
 
   /// Stores a value with automatic transaction management
@@ -502,6 +574,80 @@ class LMDB2 {
     return _withTransaction(
       (txn) async => delete(txn, key, dbName: dbName),
     );
+  }
+
+  /// Stores a UTF-8 encoded string value using an automatic transaction
+  ///
+  /// The [key] is used as UTF-8 encoded database key.
+  /// The [value] string will be UTF-8 encoded before storage.
+  ///
+  /// The optional [dbName] parameter specifies a named database.
+  /// If not provided, the default database will be used.
+  ///
+  /// The optional [flags] parameter allows setting specific LMDB flags for this operation.
+  ///
+  /// This method handles the transaction automatically, including commit and abort
+  /// in case of errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Simple string storage
+  /// await db.putUtf8Auto('greeting', 'Hello, World!');
+  ///
+  /// // Store JSON data
+  /// final userData = {'name': 'John', 'age': 30};
+  /// await db.putUtf8Auto('user_123', jsonEncode(userData));
+  /// ```
+  ///
+  /// Throws [StateError] if the database is closed.
+  /// Throws [LMDBException] if the operation fails.
+  Future<void> putUtf8Auto(
+    String key,
+    String value, {
+    String? dbName,
+    LMDBFlagSet? flags,
+  }) async {
+    return _withTransaction((txn) async {
+      return putUtf8(txn, key, value, dbName: dbName, flags: flags);
+    });
+  }
+
+  /// Retrieves a UTF-8 encoded string value using an automatic read-only transaction
+  ///
+  /// The [key] is used as UTF-8 encoded database key.
+  ///
+  /// The optional [dbName] parameter specifies a named database.
+  /// If not provided, the default database will be used.
+  ///
+  /// Returns the decoded UTF-8 string value, or null if the key doesn't exist.
+  ///
+  /// This method handles the transaction automatically, including commit and abort
+  /// in case of errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Read simple string
+  /// final greeting = await db.getUtf8Auto('greeting');
+  /// print(greeting); // Prints: Hello, World!
+  ///
+  /// // Read and parse JSON data
+  /// final jsonStr = await db.getUtf8Auto('user_123');
+  /// if (jsonStr != null) {
+  ///   final userData = jsonDecode(jsonStr);
+  ///   print('User name: ${userData['name']}');
+  /// }
+  /// ```
+  ///
+  /// Throws [StateError] if the database is closed.
+  /// Throws [LMDBException] if the operation fails.
+  /// Throws [FormatException] if the stored data is not valid UTF-8.
+  Future<String?> getUtf8Auto(
+    String key, {
+    String? dbName,
+  }) async {
+    return _withTransaction((txn) async {
+      return getUtf8(txn, key, dbName: dbName);
+    }, flags: LMDBFlagSet.readOnly);
   }
 
   /// Gets statistics with automatic transaction management

@@ -24,6 +24,7 @@
 /// try {
 ///   await db.put(txn, 'key1', 'value1'.codeUnits);
 ///   await db.put(txn, 'key2', 'value2'.codeUnits);
+///   await db.putUtf8(txn, 'key2', 'Hello world');
 ///   await db.txnCommit(txn);
 /// } catch (e) {
 ///   await db.txnAbort(txn);
@@ -45,4 +46,4 @@ export 'src/lmdb_config.dart';
 export 'src/database_stats.dart';
 export 'src/lmdb_exception.dart';
 export 'src/lmdb_flags.dart';
-export 'src/generated_bindings.dart';
+export 'src/lmdb_constants.dart';

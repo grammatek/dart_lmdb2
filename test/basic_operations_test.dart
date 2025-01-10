@@ -88,4 +88,49 @@ void main() {
     final result = await db.getAuto('non_existent_key');
     expect(result, isNull);
   });
+
+  test('UTF-8 string operations', () async {
+    final db = LMDB2();
+    await db.init(testDir.path);
+
+    // Test with different string types
+    final testData = {
+      'simple': 'Hello World',
+      'unicode': 'Hello 世界 🌍',
+      'multiline': 'Line 1\nLine 2\nLine 3',
+      'special': 'Special chars: äöüß',
+    };
+
+    // Write with explicit transaction
+    final writeTxn = await db.txnStart();
+    try {
+      for (var entry in testData.entries) {
+        await db.putUtf8(writeTxn, entry.key, entry.value);
+      }
+      await db.txnCommit(writeTxn);
+    } catch (e) {
+      await db.txnAbort(writeTxn);
+      rethrow;
+    }
+
+    // Read with explicit transaction
+    final readTxn = await db.txnStart(flags: LMDBFlagSet()..add(MDB_RDONLY));
+    try {
+      for (var entry in testData.entries) {
+        final result = await db.getUtf8(readTxn, entry.key);
+        expect(result, equals(entry.value));
+      }
+      await db.txnCommit(readTxn);
+    } catch (e) {
+      await db.txnAbort(readTxn);
+      rethrow;
+    }
+
+    // Test with auto transactions
+    await db.putUtf8Auto('auto_key', 'Auto Transaction Test');
+    final autoResult = await db.getUtf8Auto('auto_key');
+    expect(autoResult, equals('Auto Transaction Test'));
+
+    db.close();
+  });
 }

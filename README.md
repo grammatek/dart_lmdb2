@@ -4,13 +4,17 @@ A Dart wrapper for LMDB (Lightning Memory-Mapped Database), providing both high-
 
 The following LMDB functionality is supported:
 
-- [x] Basic CRUD operations
-- [x] Transactions
-- [x] Statistics
-- [ ] Opening/Creation with all supported modes
-- [ ] Cursors
-- [ ] Multi-DB
-- [ ] Statistics including freelist
+- Basic CRUD operations
+- Named DB's
+- Transactions
+- Statistics
+- Opening/Creation with all supported flags
+
+Not yet supported:
+
+- Cursors
+- Statistics including freelist
+- ???
 
 Currently, only a subset of LMDB features are exposed to Dart, but it's relatively straight-forward to expose more functionality as demand increases.
 
@@ -72,6 +76,7 @@ void main() async {
     try {
         await db.put(txn, 'key1', 'value1'.codeUnits);
         await db.put(txn, 'key2', 'value2'.codeUnits);
+        await db.putUtf8(txn, 'english_greeting', 'Hello World');
         await db.txnCommit(txn);
     } catch (e) {
         await db.txnAbort(txn);
@@ -156,7 +161,7 @@ dart test
 
 ## CREDITS
 
-Many thanks got to the OpenLDAP team to provide such a fantastic lightweight, portable and easy to use database. You can access the original source-code either directly as a GitHub [standalone version](https://github.com/LMDB/lmdb) or via the [OpenLDAP](https://git.openldap.org/openldap/openldap/tree/mdb.master) GitLab repository.
+Many thanks go to the OpenLDAP team to provide such a fantastic lightweight, portable and easy to use database. You can access the original source-code either directly as a GitHub [standalone version](https://github.com/LMDB/lmdb) or via the [OpenLDAP](https://git.openldap.org/openldap/openldap/tree/mdb.master) GitLab repository.
 
 ## LICENSE
 
