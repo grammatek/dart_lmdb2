@@ -169,6 +169,10 @@ void main() {
   });
 
   test('Write map mode', () async {
+    if (Platform.isWindows) {
+      print('Test skipped on Windows - write map mode not supported (yet)');
+      return;
+    }
     final db = LMDB2();
     final writeMapFlags = LMDBFlagSet()..add(MDB_WRITEMAP);
 
