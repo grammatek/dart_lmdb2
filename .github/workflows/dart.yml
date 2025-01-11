@@ -55,7 +55,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        flutter: ['3.26.0', '3.27.1']
+        flutter: ['3.24.5', '3.27.1']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
