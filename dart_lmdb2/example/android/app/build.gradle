@@ -1,0 +1,5 @@
+android {
+    defaultConfig {
+        minSdkVersion 21  // or higher if needed
+    }
+}
