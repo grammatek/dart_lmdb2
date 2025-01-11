@@ -64,6 +64,8 @@ jobs:
           flutter-version: ${{ matrix.flutter }}
           channel: 'stable'
 
+      - name: Install dependencies
+        run: flutter pub get
       - name: iOS Setup
         if: matrix.os == 'macos-latest'
         run: |
