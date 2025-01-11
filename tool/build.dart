@@ -5,7 +5,11 @@ void main(List<String> args) async {
   // When running as tool, use parent directory
   final projectDir = File(Platform.script.toFilePath()).parent.parent;
   try {
-    await buildNativeLibrary(projectDir);
+    if (args.contains('--ios')) {
+      await buildIosLibrary(projectDir);
+    } else {
+      await buildNativeLibrary(projectDir);
+    }
   } catch (e) {
     print('Build failed: $e');
     exit(1);

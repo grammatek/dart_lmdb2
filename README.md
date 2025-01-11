@@ -92,6 +92,14 @@ dependencies:
   dart_lmdb2: ^1.0.0
 ```
 
+Then run:
+```bash
+# For Dart projects:
+dart pub get
+# For Flutter projects:
+flutter pub get
+````
+
 ## Usage
 
 Import and use:

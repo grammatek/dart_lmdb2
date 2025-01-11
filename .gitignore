@@ -7,6 +7,7 @@
 pubspec.lock
 
 build/
+build-ios*/
 doc/api/
 .DS_Store
 .idea/

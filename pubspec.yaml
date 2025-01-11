@@ -5,6 +5,7 @@ homepage: https://github.com/grammatek/dart_lmdb2
 
 environment:
   sdk: ^3.6.0
+  flutter: ">=3.0.0"
 
 dependencies:
   ffi: ^2.1.0
@@ -33,6 +34,12 @@ scripts:
 # Documentation examples
 example:
   - example/dart_lmdb2_example.dart
+
+flutter:
+  plugin:
+    platforms:
+      ios:
+        pluginClass: DartLmdb2Plugin
 
 # Additional examples in documentation
 screenshots:
