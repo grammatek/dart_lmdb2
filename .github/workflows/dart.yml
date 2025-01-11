@@ -73,7 +73,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flutter-
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          flutter config --no-analytics --no-cli-animations
+          flutter pub get
       - name: iOS Setup
         if: matrix.os == 'macos-latest'
         run: |
