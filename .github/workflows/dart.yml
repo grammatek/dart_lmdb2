@@ -51,6 +51,50 @@ jobs:
           name: native-lib-${{ matrix.os }}
           path: lib/src/native/*
 
+  flutter-test:
+    strategy:
+      matrix:
+        os: [macos-latest]
+        flutter: ['3.27.1']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter }}
+          channel: 'stable'
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.gradle
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+      - name: Install dependencies
+        run: |
+          flutter config --no-analytics --no-cli-animations
+          flutter pub get
+      - name: iOS Setup
+        if: matrix.os == 'macos-latest'
+        run: |
+          flutter config --enable-ios
+          flutter precache --ios  # Cache iOS dependencies
+
+      - name: Build and Validate iOS Plugin
+        if: matrix.os == 'macos-latest'
+        run: |
+          dart run tool/build.dart --ios
+          cd ios || exit 1
+          pod repo update
+          pod lib lint \
+            --allow-warnings \
+            --verbose \
+            --platforms=ios \
+            --skip-tests \
+            --no-clean
+
   publish:
     needs: build-and-test
     if: github.event_name == 'release' && github.event.action == 'created'
