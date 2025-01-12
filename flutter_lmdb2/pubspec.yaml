@@ -13,6 +13,9 @@ dependencies:
   dart_lmdb2:
     path: ../dart_lmdb2
 
+scripts:
+  build: dart tool/build.dart
+
 flutter:
   plugin:
     platforms:

@@ -19,11 +19,21 @@ class LMDBNative {
   }
 
   DynamicLibrary _openLibrary() {
+    if (Platform.isIOS) {
+      // for iOS the library is statically linked
+      return DynamicLibrary.process();
+    }
+
     final libraryPath = _resolveLibraryPath();
     return DynamicLibrary.open(libraryPath);
   }
 
   String _resolveLibraryPath() {
+    if (Platform.isIOS) {
+      throw UnsupportedError(
+          'iOS uses static linking, no path resolution needed');
+    }
+
     final libDir = path.join(Directory.current.path, 'lib', 'src', 'native');
 
     if (Platform.isWindows) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:flutter_lmdb2/flutter_lmdb2.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() {
@@ -12,24 +12,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('LMDB2 Demo'),
-        ),
-        body: const LMDBDemo(),
+      home: const MyHomePage(),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
       ),
     );
   }
 }
 
-class LMDBDemo extends StatefulWidget {
-  const LMDBDemo({super.key});
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
 
   @override
-  State<LMDBDemo> createState() => _LMDBDemoState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _LMDBDemoState extends State<LMDBDemo> {
+class _MyHomePageState extends State<MyHomePage> {
   String _status = 'Initializing...';
   late LMDB2 _db;
 
@@ -41,26 +39,29 @@ class _LMDBDemoState extends State<LMDBDemo> {
 
   Future<void> _initDatabase() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final dbPath = '${dir.path}/lmdb_test';
+      // Get application documents directory
+      final appDir = await getApplicationDocumentsDirectory();
+      final dbPath = '${appDir.path}/lmdb_test';
 
+      // Initialize database
       _db = LMDB2();
-      await _db.init(dbPath, config: LMDBInitConfig(mapSize: 10 * 1024 * 1024));
+      await _db.init(dbPath,
+          config: LMDBInitConfig(mapSize: 10 * 1024 * 1024)); // 10MB
 
       // Test write
       final txn = await _db.txnStart();
       try {
-        await _db.putUtf8(txn, 'test_key', 'test_value');
+        await _db.putUtf8(txn, 'greeting', 'Hello from LMDB!');
         await _db.txnCommit(txn);
 
         // Test read
         final readTxn = await _db.txnStart();
         try {
-          final value = await _db.getUtf8(readTxn, 'test_key');
+          final value = await _db.getUtf8(readTxn, 'greeting');
           await _db.txnCommit(readTxn);
 
           setState(() {
-            _status = 'DB working! Read value: $value';
+            _status = 'DB Test successful!\nRead value: $value';
           });
         } catch (e) {
           await _db.txnAbort(readTxn);
@@ -76,17 +77,26 @@ class _LMDBDemoState extends State<LMDBDemo> {
       }
     } catch (e) {
       setState(() {
-        _status = 'Init failed: $e';
+        _status = 'DB initialization failed: $e';
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Text(_status),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('LMDB Flutter Example'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            _status,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ),
       ),
     );
   }

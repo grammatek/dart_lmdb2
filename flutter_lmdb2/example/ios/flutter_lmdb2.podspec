@@ -1,9 +1,9 @@
 Pod::Spec.new do |s|
-  s.name             = 'dart_lmdb2'
-  s.version          = '1.0.0'
-  s.summary          = 'iOS implementation of dart_lmdb2'
+  s.name             = 'flutter_lmdb2'
+  s.version          = '0.0.1'
+  s.summary          = 'Flutter plugin for LMDB'
   s.description      = <<-DESC
-iOS implementation of dart_lmdb2
+Flutter plugin for LMDB database
                        DESC
   s.homepage         = 'http://github.com/grammatek/dart_lmdb2'
   s.license          = { :file => '../LICENSE' }
@@ -14,18 +14,16 @@ iOS implementation of dart_lmdb2
   s.dependency 'Flutter'
   s.platform = :ios, '12.0'
 
+  # Include the compiled static library
+  s.vendored_libraries = 'liblmdb.a'
+
   # Compile flags
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
-    'OTHER_LDFLAGS' => '$(inherited)',
+    'VALID_ARCHS' => 'arm64 x86_64',
+    'OTHER_LDFLAGS' => '$(inherited) -force_load "${PODS_ROOT}/../.symlinks/plugins/flutter_lmdb2/ios/liblmdb.a"',
     'ENABLE_BITCODE' => 'NO'
-  }
-
-  # Include CMake build
-  s.preserve_paths = 'CMakeLists.txt'
-  s.xcconfig = {
-    'OTHER_LDFLAGS' => '$(inherited) -force_load'
   }
 end
 

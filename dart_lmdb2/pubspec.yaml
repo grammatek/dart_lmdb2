@@ -35,12 +35,6 @@ scripts:
 example:
   - example/dart_lmdb2_example.dart
 
-flutter:
-  plugin:
-    platforms:
-      ios:
-        pluginClass: DartLmdb2Plugin
-
 # Additional examples in documentation
 screenshots:
   - description: 'Basic CRUD operations'

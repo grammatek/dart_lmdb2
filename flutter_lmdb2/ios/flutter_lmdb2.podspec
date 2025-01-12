@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.homepage         = 'https://github.com/grammatek/dart_lmdb2'
   s.license          = { :type => 'MIT', :file => '../../LICENSE' }
   s.author           = { 'Grammatek' => 'info@grammatek.com' }
-  s.source           = { :path => '.' }
+  s.source           = { :git => 'https://github.com/grammatek/dart_lmdb2.git' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
 
