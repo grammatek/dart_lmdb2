@@ -32,21 +32,11 @@ executables:
 scripts:
   build: build
 
-# Documentation examples
 example:
-  - example/dart_lmdb2_example.dart
+  include: ["example/**"]
 
 platforms:
   ios:
   linux:
   macos:
   windows:
-
-# Additional examples in documentation
-screenshots:
-  - description: 'Basic CRUD operations'
-    path: example/basic_crud.dart
-  - description: 'Transaction management'
-    path: example/transactions.dart
-  - description: 'Database statistics'
-    path: example/statistics.dart
