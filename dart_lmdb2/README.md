@@ -6,7 +6,7 @@ A high-performance, embedded database for Dart applications, wrapping LMDB (Ligh
 
 |Linux|Windows|Android|MacOS|iOS|web|
 |:-:|:-:|:-:|:-:|:-:|:-:|
-|💙|💙|💙|💙|💙|-|
+|💙|💙|-|💙|💙|-|
 
 ## Why LMDB?
 
@@ -128,7 +128,7 @@ Then run:
 dart pub get
 # For Flutter projects:
 flutter pub get
-````
+```
 
 ## Usage
 
@@ -172,7 +172,9 @@ final config = LMDBInitConfig(
 await db.init('path/to/db', config: config);
 ```
 
-## Installation
+## Development
+
+If you're developing this package:
 
 ### Prerequisites
 
@@ -204,9 +206,7 @@ brew install cmake
 - Install CMake
 
 
-## Development Setup
-
-If you're developing this package:
+## Setup
 
 1. Clone the repository:
 ```bash
