@@ -15,3 +15,6 @@ doc/api/
 *.dylib
 *.dll
 *.so
+!lib/src/native/liblmdb.dylib
+!lib/src/native/liblmdb.so
+!lib/src/native/lmdb.dll

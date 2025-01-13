@@ -312,14 +312,6 @@
 ///   )
 /// );
 /// ```
-///
-/// See also:
-/// * [LMDB2] - The main database class
-/// * [LMDBConfig] - Configuration utilities
-/// * [DatabaseStats] - Statistics about the database
-/// * [LMDBFlagSet] - Type-safe flag management
-/// * Example code in `example/dart_lmdb2_example.dart`
-///
 library;
 
 export 'src/database_stats.dart';
@@ -329,5 +321,4 @@ export 'src/lmdb_constants.dart';
 export 'src/lmdb_cursor.dart';
 export 'src/lmdb_exception.dart';
 export 'src/lmdb_flags.dart';
-export 'src/lmdb_transaction.dart';
 export 'src/generated_bindings.dart' show MDB_txn;

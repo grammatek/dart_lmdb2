@@ -1,21 +1,23 @@
 name: dart_lmdb2
 description: A modern Dart wrapper for LMDB (Lightning Memory-Mapped Database), providing both high-level convenience methods and low-level transaction control.
-version: 0.9.0
+version: 0.9.1
 homepage: https://github.com/grammatek/dart_lmdb2
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
 
 dependencies:
+  args: ^2.6.0
   ffi: ^2.1.0
   path: ^1.8.3
 
 dev_dependencies:
-  analyzer: ^6.4.1
+  analyzer: ^6.11.0
   ffigen: ^16.0.0
   build_runner: ^2.4.14
   lints: ^5.0.0
   test: ^1.17.0
+  pana:
 
 ffigen:
   output: 'lib/src/generated_bindings.dart'
@@ -23,23 +25,20 @@ ffigen:
     entry-points:
       - 'src/include/lmdb.h'
   include-unused-typedefs: true
+  preamble: |
+    // ignore_for_file: type=lint, unused_element, unused_field, unused_typedef
 
 executables:
   build: build
 
 scripts:
   build: build
-  postinstall: dart run dart_lmdb2:build
 
-# Documentation examples
 example:
-  - example/dart_lmdb2_example.dart
+  include: ["example/**"]
 
-# Additional examples in documentation
-screenshots:
-  - description: 'Basic CRUD operations'
-    path: example/basic_crud.dart
-  - description: 'Transaction management'
-    path: example/transactions.dart
-  - description: 'Database statistics'
-    path: example/statistics.dart
+platforms:
+  ios:
+  linux:
+  macos:
+  windows:

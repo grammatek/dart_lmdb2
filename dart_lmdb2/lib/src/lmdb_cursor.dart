@@ -64,6 +64,7 @@ enum CursorOp {
   /// Only for MDB_DUPFIXED
   prevMultiple(bindings.MDB_cursor_op.MDB_PREV_MULTIPLE);
 
+  /// Internal value used by LMDB2
   final bindings.MDB_cursor_op value;
   const CursorOp(this.value);
 }

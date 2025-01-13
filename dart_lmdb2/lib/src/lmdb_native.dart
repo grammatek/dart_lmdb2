@@ -1,6 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
-import 'package:path/path.dart' as path;
+import 'dart:isolate';
 import 'generated_bindings.dart';
 
 /// Singleton for managing LMDB native library access
@@ -34,16 +34,23 @@ class LMDBNative {
           'iOS uses static linking, no path resolution needed');
     }
 
-    final libDir = path.join(Directory.current.path, 'lib', 'src', 'native');
+    final libName = Platform.isWindows
+        ? 'lmdb.dll'
+        : Platform.isMacOS
+            ? 'liblmdb.dylib'
+            : Platform.isLinux
+                ? 'liblmdb.so'
+                : throw UnsupportedError('Unsupported platform');
 
-    if (Platform.isWindows) {
-      return path.join(libDir, 'lmdb.dll');
-    } else if (Platform.isMacOS) {
-      return path.join(libDir, 'liblmdb.dylib');
-    } else if (Platform.isLinux) {
-      return path.join(libDir, 'liblmdb.so');
+    // Resolve package URI to File-URI: this is the only portable way I found
+    final Uri packageUri = Uri.parse('package:dart_lmdb2/src/native/$libName');
+    final Uri? fileUri = Isolate.resolvePackageUriSync(packageUri);
+
+    if (fileUri == null) {
+      throw FileSystemException('Could not resolve native library path');
     }
-
-    throw UnsupportedError('Unsupported platform');
+    final nativeLibPath = fileUri.toFilePath();
+    // print('nativeLibPath: $nativeLibPath');
+    return nativeLibPath;
   }
 }
