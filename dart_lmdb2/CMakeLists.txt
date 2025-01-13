@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 project(dart_lmdb2 C)
 
+# MacOS Universal Binary Support
+if(APPLE AND NOT IOS)
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
+    message(STATUS "Building Universal Binary for macOS (arm64 + x86_64)")
+endif()
+
 # Platform detection
 if(IOS)
     message(STATUS "Configuring for iOS")
