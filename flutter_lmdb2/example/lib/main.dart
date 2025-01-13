@@ -1,21 +1,24 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_lmdb2/flutter_lmdb2.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const FlutterLMDB2Demo());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class FlutterLMDB2Demo extends StatelessWidget {
+  const FlutterLMDB2Demo({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: const MyHomePage(),
+      title: 'Flutter Demo with flutter_lmdb2',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
+      home: const MyHomePage(),
     );
   }
 }
@@ -39,45 +42,124 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _initDatabase() async {
     try {
+      print('Starting database initialization...');
+
       // Get application documents directory
       final appDir = await getApplicationDocumentsDirectory();
       final dbPath = '${appDir.path}/lmdb_test';
+      print('Using database path: $dbPath');
+
+      // Ensure directory exists
+      final dbDir = Directory(dbPath);
+      if (!dbDir.existsSync()) {
+        try {
+          dbDir.createSync(recursive: true);
+          print('Created database directory: $dbPath');
+        } catch (e) {
+          print('Failed to create directory: $e');
+          setState(() {
+            _status = 'Failed to create database directory: $e';
+          });
+          return;
+        }
+      }
+
+      // Check directory permissions
+      try {
+        final file = File('${dbPath}/test.txt');
+        await file.writeAsString('test');
+        await file.delete();
+        print('Directory permissions verified');
+      } catch (e) {
+        print('Directory permission test failed: $e');
+        setState(() {
+          _status = 'No write permission in database directory: $e';
+        });
+        return;
+      }
 
       // Initialize database
       _db = LMDB2();
-      await _db.init(dbPath,
-          config: LMDBInitConfig(mapSize: 10 * 1024 * 1024)); // 10MB
+      print('Created LMDB2 instance');
 
-      // Test write
-      final txn = await _db.txnStart();
+      try {
+        await _db.init(dbPath,
+            config: LMDBInitConfig(mapSize: 10 * 1024 * 1024)); // 10MB
+        print('Database initialized successfully');
+      } catch (e) {
+        print('Database initialization failed: $e');
+        setState(() {
+          _status = 'Database initialization failed: $e';
+        });
+        return;
+      }
+
+      // Test write with error handling
+      late final txn;
+      try {
+        txn = await _db.txnStart();
+        print('Transaction started');
+      } catch (e) {
+        print('Failed to start transaction: $e');
+        setState(() {
+          _status = 'Failed to start transaction: $e';
+        });
+        return;
+      }
+
       try {
         await _db.putUtf8(txn, 'greeting', 'Hello from LMDB!');
+        print('Data written');
         await _db.txnCommit(txn);
-
-        // Test read
-        final readTxn = await _db.txnStart();
-        try {
-          final value = await _db.getUtf8(readTxn, 'greeting');
-          await _db.txnCommit(readTxn);
-
-          setState(() {
-            _status = 'DB Test successful!\nRead value: $value';
-          });
-        } catch (e) {
-          await _db.txnAbort(readTxn);
-          setState(() {
-            _status = 'Read failed: $e';
-          });
-        }
+        print('Transaction committed');
       } catch (e) {
-        await _db.txnAbort(txn);
+        print('Write operation failed: $e');
+        try {
+          await _db.txnAbort(txn);
+        } catch (abortError) {
+          print('Additionally, transaction abort failed: $abortError');
+        }
         setState(() {
-          _status = 'Write failed: $e';
+          _status = 'Write operation failed: $e';
+        });
+        return;
+      }
+
+      // Test read with error handling
+      late final readTxn;
+      try {
+        readTxn = await _db.txnStart();
+      } catch (e) {
+        print('Failed to start read transaction: $e');
+        setState(() {
+          _status = 'Failed to start read transaction: $e';
+        });
+        return;
+      }
+
+      try {
+        final value = await _db.getUtf8(readTxn, 'greeting');
+        print('Data read: $value');
+        await _db.txnCommit(readTxn);
+
+        setState(() {
+          _status = 'DB Test successful!\nRead value: $value';
+        });
+      } catch (e) {
+        print('Read operation failed: $e');
+        try {
+          await _db.txnAbort(readTxn);
+        } catch (abortError) {
+          print('Additionally, read transaction abort failed: $abortError');
+        }
+        setState(() {
+          _status = 'Read operation failed: $e';
         });
       }
     } catch (e) {
+      print('Unexpected error during database operations: $e');
       setState(() {
-        _status = 'DB initialization failed: $e';
+        _status = 'Unexpected error: $e';
       });
     }
   }
@@ -86,15 +168,26 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('LMDB Flutter Example'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('flutter_lmdb2 Flutter Demo'),
       ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text(
-            _status,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              const Text(
+                'Database Status:',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _status,
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),
@@ -103,7 +196,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
-    _db.close();
+    try {
+      _db.close();
+      print('Database closed successfully');
+    } catch (e) {
+      print('Error closing database: $e');
+    }
     super.dispose();
   }
 }

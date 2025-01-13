@@ -23,7 +23,7 @@ Pod::Spec.new do |s|
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
-    'OTHER_LDFLAGS' => '$(inherited) -force_load',
+    'OTHER_LDFLAGS' => '$(inherited) -force_load "${PODS_ROOT}/../.symlinks/plugins/flutter_lmdb2/ios/liblmdb.a"',
     'VALID_ARCHS' => 'arm64 x86_64',
     'IPHONEOS_DEPLOYMENT_TARGET' => '12.0'
   }

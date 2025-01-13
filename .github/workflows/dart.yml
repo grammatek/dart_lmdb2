@@ -30,7 +30,9 @@ jobs:
         run: ${{ matrix.cmake-install }}
 
       - name: Install dependencies
-        run: dart pub get
+        run: |
+          cd dart_lmdb2 || exit 1
+          dart pub get
 
       - name: Build native library
         run: dart run tool/build.dart
@@ -74,6 +76,7 @@ jobs:
             ${{ runner.os }}-flutter-
       - name: Install dependencies
         run: |
+          cd flutter_lmdb2/ || exit 1
           flutter config --no-analytics --no-cli-animations
           flutter pub get
       - name: iOS Setup
@@ -126,7 +129,9 @@ jobs:
       - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
 
       - name: Install dependencies
-        run: dart pub get
+        run: |
+          cd dart_lmdb2 || exit 1
+          dart pub get
 
       - name: Generate documentation
         run: dart doc

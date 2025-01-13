@@ -55,6 +55,8 @@ set(LMDB_SRC
 )
 
 if(IOS)
+    # If this is not set, SYSTEM_V semaphores will be used and this doesn't work on iOS
+    add_definitions(-DMDB_USE_POSIX_SEM)
     add_library(lmdb STATIC
         ${LMDB_SRC}
     )
