@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: native-lib-${{ matrix.os }}
-          path: lib/src/native/*
+          path: dart_lmdb2/lib/src/native/*
 
   build_test_flutter_lmbd2:
     strategy:
@@ -104,7 +104,9 @@ jobs:
     needs: build_test_dart_lmbd2
     if: github.event_name == 'release' && github.event.action == 'created'
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: ./dart_lmdb2
     steps:
       - uses: actions/checkout@v4
 
