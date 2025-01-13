@@ -4,7 +4,6 @@ import 'package:path/path.dart' as path;
 
 void main(List<String> args) async {
   try {
-    // Finde das Package-Verzeichnis
     final packageDir = _findPackageDir();
     print('Package directory: ${packageDir.path}');
 
@@ -20,10 +19,8 @@ void main(List<String> args) async {
 }
 
 Directory _findPackageDir() {
-  // Startpunkt ist das aktuelle Script
   var current = File(Platform.script.toFilePath()).parent;
 
-  // Gehe Verzeichnisse hoch, bis pubspec.yaml gefunden wird
   while (current.path != current.parent.path) {
     final pubspecFile = File(path.join(current.path, 'pubspec.yaml'));
     if (pubspecFile.existsSync()) {
@@ -32,7 +29,6 @@ Directory _findPackageDir() {
     current = current.parent;
   }
 
-  // Fallback: Versuche relativen Pfad vom Package
   final packageDir = Directory(path.join(
       File(Platform.script.toFilePath())
           .parent
