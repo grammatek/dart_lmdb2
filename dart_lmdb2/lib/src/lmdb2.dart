@@ -8,6 +8,7 @@ import 'generated_bindings.dart';
 import 'lmdb_exception.dart';
 import 'database_stats.dart';
 import 'lmdb_config.dart';
+import 'lmdb_cursor.dart';
 import 'lmdb_flags.dart';
 import 'lmdb_native.dart';
 
@@ -1363,6 +1364,289 @@ class LMDB2 {
 
       return statistics;
     }, flags: LMDBFlagSet.readOnly);
+  }
+
+  /// Opens a new cursor for the specified database
+  ///
+  /// Parameters:
+  /// * [txn] - Active transaction
+  /// * [dbName] - Optional named database
+  ///
+  /// Returns a cursor that must be closed with [cursorClose]
+  ///
+  /// Example:
+  /// ```dart
+  /// final txn = await db.txnStart();
+  /// try {
+  ///   final cursor = await db.cursorOpen(txn);
+  ///   try {
+  ///     // Use cursor...
+  ///   } finally {
+  ///     db.cursorClose(cursor);
+  ///   }
+  ///   await db.txnCommit(txn);
+  /// } catch (e) {
+  ///   await db.txnAbort(txn);
+  ///   rethrow;
+  /// }
+  /// ```
+  ///
+  Future<Pointer<MDB_cursor>> cursorOpen(
+    Pointer<MDB_txn> txn, {
+    String? dbName,
+  }) async {
+    if (!isInitialized) throw StateError(_errDbNotInitialized);
+
+    final dbi = await _getDatabase(txn, name: dbName);
+    final cursorPtr = calloc<Pointer<MDB_cursor>>();
+
+    try {
+      final result = _lib.mdb_cursor_open(txn, dbi, cursorPtr);
+      if (result != 0) {
+        throw LMDBException('Failed to open cursor', result);
+      }
+      return cursorPtr.value;
+    } finally {
+      calloc.free(cursorPtr);
+    }
+  }
+
+  /// Closes a cursor
+  ///
+  /// The cursor must not be used after closing.
+  void cursorClose(Pointer<MDB_cursor> cursor) {
+    _lib.mdb_cursor_close(cursor);
+  }
+
+  /// Positions cursor and retrieves data
+  ///
+  /// Parameters:
+  /// * [cursor] - Active cursor
+  /// * [key] - Optional key for positioning operations
+  /// * [operation] - Cursor operation to perform
+  ///
+  /// Returns the entry at cursor position, or null if no data was found
+  ///
+  /// Example:
+  /// ```dart
+  /// // Get first entry
+  /// final firstEntry = await db.cursorGet(cursor, null, CursorOp.first);
+  ///
+  /// // Find specific entry
+  /// final entry = await db.cursorGet(
+  ///   cursor,
+  ///   utf8.encode('searchKey'),
+  ///   CursorOp.setRange
+  /// );
+  ///
+  /// // Iterate through entries
+  /// var entry = await db.cursorGet(cursor, null, CursorOp.first);
+  /// while (entry != null) {
+  ///   print('Found: ${entry.toString()}');
+  ///   entry = await db.cursorGet(cursor, null, CursorOp.next);
+  /// }
+  /// ```
+  Future<CursorEntry?> cursorGet(
+    Pointer<MDB_cursor> cursor,
+    List<int>? key,
+    CursorOp operation,
+  ) async {
+    final keyVal = calloc<MDB_val>();
+    final dataVal = calloc<MDB_val>();
+
+    try {
+      if (key != null) {
+        final keyPtr = calloc<Uint8>(key.length);
+        try {
+          final keyList = keyPtr.asTypedList(key.length);
+          keyList.setAll(0, key);
+
+          keyVal.ref.mv_size = key.length;
+          keyVal.ref.mv_data = keyPtr.cast();
+
+          final result =
+              _lib.mdb_cursor_get(cursor, keyVal, dataVal, operation.value);
+
+          if (result == MDB_NOTFOUND) return null;
+          if (result != 0) {
+            throw LMDBException('Cursor operation failed', result);
+          }
+
+          return CursorEntry(
+            key: keyVal.ref.mv_data
+                .cast<Uint8>()
+                .asTypedList(keyVal.ref.mv_size)
+                .toList(),
+            data: dataVal.ref.mv_data
+                .cast<Uint8>()
+                .asTypedList(dataVal.ref.mv_size)
+                .toList(),
+          );
+        } finally {
+          calloc.free(keyPtr);
+        }
+      } else {
+        final result =
+            _lib.mdb_cursor_get(cursor, keyVal, dataVal, operation.value);
+
+        if (result == MDB_NOTFOUND) return null;
+        if (result != 0) {
+          throw LMDBException('Cursor operation failed', result);
+        }
+
+        return CursorEntry(
+          key: keyVal.ref.mv_data
+              .cast<Uint8>()
+              .asTypedList(keyVal.ref.mv_size)
+              .toList(),
+          data: dataVal.ref.mv_data
+              .cast<Uint8>()
+              .asTypedList(dataVal.ref.mv_size)
+              .toList(),
+        );
+      }
+    } finally {
+      calloc.free(keyVal);
+      calloc.free(dataVal);
+    }
+  }
+
+  /// Stores data at current cursor position
+  ///
+  /// Parameters:
+  /// * [cursor] - Active cursor
+  /// * [key] - Key to store
+  /// * [value] - Value to store
+  /// * [flags] - Optional operation flags
+  ///
+  /// Example:
+  /// ```dart
+  /// await db.cursorPut(
+  ///   cursor,
+  ///   utf8.encode('key'),
+  ///   utf8.encode('value'),
+  ///   0
+  /// );
+  /// ```
+  Future<void> cursorPut(
+    Pointer<MDB_cursor> cursor,
+    List<int> key,
+    List<int> value,
+    int flags,
+  ) async {
+    final keyPtr = calloc<Uint8>(key.length);
+    final valuePtr = calloc<Uint8>(value.length);
+
+    try {
+      final keyList = keyPtr.asTypedList(key.length);
+      keyList.setAll(0, key);
+
+      final valueList = valuePtr.asTypedList(value.length);
+      valueList.setAll(0, value);
+
+      return _withAllocated<void, MDB_val>((keyVal) {
+        return _withAllocated<void, MDB_val>((dataVal) {
+          keyVal.ref.mv_size = key.length;
+          keyVal.ref.mv_data = keyPtr.cast();
+
+          dataVal.ref.mv_size = value.length;
+          dataVal.ref.mv_data = valuePtr.cast();
+
+          final result = _lib.mdb_cursor_put(
+            cursor,
+            keyVal,
+            dataVal,
+            flags,
+          );
+
+          if (result != 0) {
+            throw LMDBException('Failed to put cursor data', result);
+          }
+        }, calloc<MDB_val>());
+      }, calloc<MDB_val>());
+    } finally {
+      calloc.free(keyPtr);
+      calloc.free(valuePtr);
+    }
+  }
+
+  /// Convenience method to store UTF-8 strings using cursor
+  ///
+  /// Parameters:
+  /// * [cursor] - Active cursor
+  /// * [key] - Key string
+  /// * [value] - Value string
+  /// * [flags] - Optional operation flags
+  ///
+  /// Example:
+  /// ```dart
+  /// await db.cursorPutUtf8(
+  /// cursor,
+  /// 'user:123',
+  /// '{"name": "John", "age": 30}'
+  /// );
+  /// ```
+  Future<void> cursorPutUtf8(
+      Pointer<MDB_cursor> cursor, String key, String value,
+      [int flags = 0]) async {
+    return cursorPut(
+      cursor,
+      utf8.encode(key),
+      utf8.encode(value),
+      flags,
+    );
+  }
+
+  /// Deletes the entry at current cursor position
+  ///
+  /// Parameters:
+  /// * [cursor] - Active cursor
+  /// * [flags] - Optional operation flags
+  ///
+  /// Example:
+  /// ```dart
+  /// // Position cursor and delete entry
+  /// final entry = await db.cursorGet(cursor, null, CursorOp.first);
+  /// if (entry != null) {
+  ///   await db.cursorDelete(cursor);
+  /// }
+  /// ```
+  Future<void> cursorDelete(Pointer<MDB_cursor> cursor, [int flags = 0]) async {
+    final result = _lib.mdb_cursor_del(cursor, flags);
+    if (result != 0) {
+      throw LMDBException('Failed to delete at cursor', result);
+    }
+  }
+
+  /// Helper method to count entries using a cursor
+  ///
+  /// Parameters:
+  /// * [txn] - Active transaction
+  /// * [dbName] - Optional named database
+  ///
+  /// Returns the number of entries in the database
+  ///
+  /// Example:
+  /// ```dart
+  /// final count = await db.cursorCount();
+  /// print('Database contains $count entries');
+  /// ```
+  Future<int> cursorCount(
+    Pointer<MDB_txn> txn, {
+    String? dbName,
+  }) async {
+    final cursor = await cursorOpen(txn, dbName: dbName);
+    try {
+      var count = 0;
+      var entry = await cursorGet(cursor, null, CursorOp.first);
+      while (entry != null) {
+        count++;
+        entry = await cursorGet(cursor, null, CursorOp.next);
+      }
+      return count;
+    } finally {
+      cursorClose(cursor);
+    }
   }
 
   /// Cleans up resources and closes the database.

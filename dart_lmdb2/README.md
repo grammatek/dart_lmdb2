@@ -1,6 +1,12 @@
 # dart_lmdb2
 
-A high-performance, embedded database solution for Dart applications, wrapping LMDB (Lightning Memory-Mapped Database). This package provides both high-level convenience methods and granular transaction control.
+A high-performance, embedded database for Dart applications, wrapping LMDB (Lightning Memory-Mapped Database). This package provides both high-level convenience methods and granular transaction control.
+
+[![Pub Version](https://img.shields.io/pub/v/dart_lmbd2?logo=dart)](https://pub.dev/packages/dart_lmbd2)
+
+|Linux|Windows|Android|MacOS|iOS|web|
+|:-:|:-:|:-:|:-:|:-:|:-:|
+|💙|💙|soon|💙|💙|-|
 
 ## Why LMDB?
 
@@ -15,7 +21,7 @@ LMDB is particularly well-suited for mobile and embedded applications because:
 
 - Minimal Resource Requirements:
   - Ultra-compact native library (<150KB)
-  - Configurable memory ceiling with fixed mapSize limit
+  - Configurable DB ceiling with fixed mapSize limit
   - Single-threaded design with minimal process overhead
   - No additional runtime dependencies
 
@@ -23,6 +29,9 @@ LMDB is particularly well-suited for mobile and embedded applications because:
   - Zero-copy reads through direct memory mapping
   - Efficient OS-level page caching eliminates I/O bottlenecks
   - Optimized for read operations through direct memory access
+  - Read transactions never block writers
+  - Writers never block readers
+  - Sequential reads are extremely fast due to B+ tree design
 
 - Reliability:
   - Full ACID compliance with atomic, crash-resistant transactions
@@ -31,26 +40,47 @@ LMDB is particularly well-suited for mobile and embedded applications because:
   - Optional self-contained single file design simplifies backup operations
   - Battle-tested in OpenLDAP
 
+### Scenarios:
+
+- Super fast querying of big DB's with minimal memory, e.g.
+  - Dictionaries
+  - Tile caches
+  - Texture caching
+  - Multiplatform assets
+- Coherent realtime data updates
+  - Producer -> Consumer(s)
+    - Main App -> Plugin Instances
+    - Audio Engine -> Visualizers
+  - Multiple Producers -> Multiple Consumers
+    - Worker Pools
+    - Distributed Processing
+  - Resource-Constrained IPC
+    - Flutter App -> AudioUnit Extension
+    - Host -> Sandboxed Plugins
+- Configuration data (and lots of it)
+
+
+## Why not LMDB ?
+
+LMDB is not a general purpose database. It's a DB for specific purposes and shines in these areas.
+
+You should not use LMDB, if
+- your schema is not K/V based, but relational
+- you need to efficiently query values additionally to keys
+- you want to save time series or streaming data (e.g. logging)
+- you cannot provide the same amount of RAM as your DB size **in write scenarios**
+
+
 ## Supported Features
 
 The following LMDB functionality is exposed:
 
 - Complete CRUD operations
 - Named databases for data organization
+- Cursor operations for range queries
 - Full transaction support with ACID guarantees
 - Comprehensive statistics and monitoring
 - Configurable initialization with all LMDB flags
-
-## Current Limitations
-
-Features not yet implemented:
-
-- Cursor operations for range queries
-- Extended statistics including freelist
-- Nested databases
-- Multiple named databases in single transaction
-
-Adding these features is straightforward and can be implemented based on demand.
 
 ## Version Information
 
@@ -89,7 +119,7 @@ Dart LMDB2 Wrapper:
 Add the package to your `pubspec.yaml`:
 ```yaml
 dependencies:
-  dart_lmdb2: ^1.0.0
+  dart_lmdb2: ^0.9.0
 ```
 
 Then run:

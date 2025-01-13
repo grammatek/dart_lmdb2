@@ -322,9 +322,12 @@
 ///
 library;
 
+export 'src/database_stats.dart';
 export 'src/lmdb2.dart';
 export 'src/lmdb_config.dart';
-export 'src/database_stats.dart';
+export 'src/lmdb_constants.dart';
+export 'src/lmdb_cursor.dart';
 export 'src/lmdb_exception.dart';
 export 'src/lmdb_flags.dart';
-export 'src/lmdb_constants.dart';
+export 'src/lmdb_transaction.dart';
+export 'src/generated_bindings.dart' show MDB_txn;
