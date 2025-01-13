@@ -2,11 +2,11 @@
 
 A high-performance, embedded database for Dart applications, wrapping LMDB (Lightning Memory-Mapped Database). This package provides both high-level convenience methods and granular transaction control.
 
-[![Pub Version](https://img.shields.io/pub/v/dart_lmbd2?logo=dart)](https://pub.dev/packages/dart_lmbd2)
+[![Pub Version](https://img.shields.io/pub/v/dart_lmdb2?logo=dart)](https://pub.dev/packages/dart_lmdb2)
 
 |Linux|Windows|Android|MacOS|iOS|web|
 |:-:|:-:|:-:|:-:|:-:|:-:|
-|💙|💙|soon|💙|💙|-|
+|💙|💙|💙|💙|💙|-|
 
 ## Why LMDB?
 
