@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.10)
+
+# Set iOS specific variables
+set(IOS TRUE)
+set(CMAKE_SYSTEM_NAME iOS)
+
+# Include main CMake configuration
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../CMakeLists.txt)
