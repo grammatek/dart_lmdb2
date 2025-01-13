@@ -144,20 +144,3 @@ Future<void> buildIosLibrary(Directory projectDir) async {
   print('\niOS build completed successfully!');
   print('Universal library created at: ${universalLib.path}');
 }
-
-/// Get the platform-specific library name
-String _getPlatformLibraryName() {
-  if (Platform.isWindows) {
-    return 'lmdb.dll';
-  } else if (Platform.isMacOS) {
-    return 'liblmdb.dylib';
-  } else if (Platform.isLinux) {
-    return 'liblmdb.so';
-  } else if (Platform.isIOS) {
-    return 'liblmdb.a'; // Static library for iOS
-  }
-  throw BuildException(
-    'Unsupported platform: ${Platform.operatingSystem}',
-    1,
-  );
-}
