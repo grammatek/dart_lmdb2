@@ -25,6 +25,8 @@ ffigen:
     entry-points:
       - 'src/include/lmdb.h'
   include-unused-typedefs: true
+  preamble: |
+    // ignore_for_file: type=lint, unused_element, unused_field, unused_typedef
 
 executables:
   build: build
