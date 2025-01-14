@@ -110,10 +110,17 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
   }
 
   // Copy the library to the lib directory
-  final libDir = Directory(path.join(projectDir.path, 'lib', 'src', 'native'));
-  if (!libDir.existsSync()) {
-    print('Creating native library directory...');
-    libDir.createSync(recursive: true);
+  final platformDir = Directory(path.join(
+    projectDir.path,
+    'lib',
+    'src',
+    'native',
+    Platform.operatingSystem, // 'windows', 'linux', 'macos'
+  ));
+
+  if (!platformDir.existsSync()) {
+    print('Creating platform directory...');
+    platformDir.createSync(recursive: true);
   }
 
   final String libraryName = _getPlatformLibraryName();
@@ -143,11 +150,11 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
       },
     );
   } else {
-    // Unix-ähnliche Systeme
+    // Unixoid systems
     builtLib = File(path.join(buildDir.path, 'lib', libraryName));
   }
 
-  final targetLib = File(path.join(libDir.path, libraryName));
+  final targetLib = File(path.join(platformDir.path, libraryName));
 
   if (builtLib.existsSync()) {
     builtLib.copySync(targetLib.path);

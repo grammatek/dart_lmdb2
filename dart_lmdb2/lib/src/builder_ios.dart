@@ -109,7 +109,13 @@ Future<void> buildIosLibrary(Directory projectDir) async {
   }
 
   // Create target directory
-  final iosDir = Directory(path.join(projectDir.path, 'ios'));
+  final iosDir = Directory(path.join(
+    projectDir.path,
+    'lib',
+    'src',
+    'native',
+    'ios',
+  ));
   if (!iosDir.existsSync()) {
     iosDir.createSync(recursive: true);
   }

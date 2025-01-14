@@ -14,8 +14,6 @@ doc/api/
 *.dylib
 *.dll
 *.so
-!lib/src/native/android/arm64-v8a/liblmdb.so
-!lib/src/native/android/x86_64/liblmdb.so
-!lib/src/native/liblmdb.dylib
-!lib/src/native/liblmdb.so
-!lib/src/native/lmdb.dll
+!lib/src/native/**/*.dll
+!lib/src/native/**/*.dylib
+!lib/src/native/**/*.so

@@ -60,13 +60,15 @@ class LMDBNative {
       return fileUri.toFilePath();
     }
 
+    final platform = Platform.operatingSystem; // 'windows', 'macos', 'linux'
     final libName = Platform.isWindows
         ? 'lmdb.dll'
         : Platform.isMacOS
             ? 'liblmdb.dylib'
             : 'liblmdb.so';
 
-    final Uri packageUri = Uri.parse('package:dart_lmdb2/src/native/$libName');
+    final Uri packageUri =
+        Uri.parse('package:dart_lmdb2/src/native/$platform/$libName');
     final Uri? fileUri = Isolate.resolvePackageUriSync(packageUri);
 
     if (fileUri == null) {

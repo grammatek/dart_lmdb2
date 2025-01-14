@@ -62,9 +62,14 @@ Future<void> buildAndroidLibrary(Directory projectDir) async {
     }
 
     // Create target directory
-    final targetDir = Directory(
-      path.join(projectDir.path, 'lib', 'src', 'native', 'android', abi),
-    );
+    final targetDir = Directory(path.join(
+      projectDir.path,
+      'lib',
+      'src',
+      'native',
+      'android',
+      abi,
+    ));
     if (!targetDir.existsSync()) {
       targetDir.createSync(recursive: true);
     }
