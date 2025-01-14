@@ -34,7 +34,6 @@ jobs:
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r27c
-          local-cache: true
         id: setup-ndk
 
       - name: Set NDK path
