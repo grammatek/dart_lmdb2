@@ -1,3 +1,7 @@
+## 0.9.2
+* change exported dart file from dart_lmdb2.dart => lmdb.dart
+* change LMDB2 class name to LMDB
+
 ## 0.9.1
 
 * Bundle dynamic libraries for all native platforms and load in a sane way

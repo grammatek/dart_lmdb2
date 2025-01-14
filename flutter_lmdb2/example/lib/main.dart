@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_lmdb2/flutter_lmdb2.dart';
+import 'package:flutter_lmdb2/lmdb.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() {
-  runApp(const FlutterLMDB2Demo());
+  runApp(const FlutterLMDBDemo());
 }
 
-class FlutterLMDB2Demo extends StatelessWidget {
-  const FlutterLMDB2Demo({super.key});
+class FlutterLMDBDemo extends StatelessWidget {
+  const FlutterLMDBDemo({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String _status = 'Initializing...';
-  late LMDB2 _db;
+  late LMDB _db;
 
   @override
   void initState() {
@@ -79,8 +79,8 @@ class _MyHomePageState extends State<MyHomePage> {
       }
 
       // Initialize database
-      _db = LMDB2();
-      print('Created LMDB2 instance');
+      _db = LMDB();
+      print('Created LMDB instance');
 
       try {
         await _db.init(dbPath,

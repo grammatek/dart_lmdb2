@@ -1,4 +1,4 @@
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
 
@@ -11,7 +11,7 @@ void main() async {
   );
 
   final dbPath = path.join(Directory.current.path, 'example_db');
-  final db = LMDB2();
+  final db = LMDB();
 
   try {
     await db.init(dbPath, config: config);

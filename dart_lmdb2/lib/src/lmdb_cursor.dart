@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'generated_bindings.dart' as bindings;
 
-/// Public cursor operation modes for LMDB2
+/// Public cursor operation modes for LMDB
 enum CursorOp {
   /// Position at first key/data item
   first(bindings.MDB_cursor_op.MDB_FIRST),
@@ -64,7 +64,7 @@ enum CursorOp {
   /// Only for MDB_DUPFIXED
   prevMultiple(bindings.MDB_cursor_op.MDB_PREV_MULTIPLE);
 
-  /// Internal value used by LMDB2
+  /// Internal value used by LMDB
   final bindings.MDB_cursor_op value;
   const CursorOp(this.value);
 }

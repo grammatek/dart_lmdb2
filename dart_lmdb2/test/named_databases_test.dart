@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:math';
 import 'package:test/test.dart';
 import 'package:path/path.dart' as path;
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 
 void main() {
-  late LMDB2 db;
+  late LMDB db;
   late String dbPath;
   late Directory testDir;
 
@@ -22,7 +22,7 @@ void main() {
     testDir.createSync(recursive: true);
 
     dbPath = testDir.path;
-    db = LMDB2();
+    db = LMDB();
 
     try {
       final config = LMDBInitConfig(

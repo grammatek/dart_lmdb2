@@ -1,4 +1,4 @@
-name: Dart LMDB2
+name: LMDB2
 
 on:
   push:

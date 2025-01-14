@@ -1,10 +1,10 @@
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
 
 /// This example shows how to use explicit transactions for batch operations.
 void main() async {
-  final db = LMDB2();
+  final db = LMDB();
   final dbPath = path.join(Directory.current.path, 'example_db');
   await db.init(dbPath);
 

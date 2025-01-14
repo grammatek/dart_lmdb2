@@ -1,4 +1,4 @@
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
@@ -13,7 +13,7 @@ void main() async {
     dir.createSync(recursive: true);
   }
 
-  final db = LMDB2();
+  final db = LMDB();
 
   try {
     // Initialize with default configuration

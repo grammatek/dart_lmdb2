@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:test/test.dart';
 import 'package:path/path.dart' as path;
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 
 void main() {
   late Directory testDir;
@@ -31,7 +31,7 @@ void main() {
     final dbPath = path.join(testDir.path, 'readonly_test');
 
     // First create and populate database
-    final writeDb = LMDB2();
+    final writeDb = LMDB();
     await writeDb.init(
       dbPath,
       config: LMDBInitConfig(mapSize: LMDBConfig.minMapSize, mode: "0o666"),
@@ -40,7 +40,7 @@ void main() {
     writeDb.close();
 
     // Now open in read-only mode
-    final readDb = LMDB2();
+    final readDb = LMDB();
     final readOnlyFlags = LMDBFlagSet.readOnly;
 
     await readDb.init(dbPath,
@@ -65,7 +65,7 @@ void main() {
   });
 
   test('High performance mode', () async {
-    final db = LMDB2();
+    final db = LMDB();
     final highPerfFlags = LMDBFlagSet.highPerformance;
 
     await db.init(
@@ -105,7 +105,7 @@ void main() {
     final dbFile = File(path.join(testDir.path, 'data.mdb'));
     final lockFile = File(path.join(testDir.path, 'data.mdb-lock'));
 
-    final db = LMDB2();
+    final db = LMDB();
     final noSubdirFlags = LMDBFlagSet()..add(MDB_NOSUBDIR);
 
     await db.init(dbFile.path, flags: noSubdirFlags);
@@ -124,7 +124,7 @@ void main() {
     final dbPath = path.join(testDir.path, 'combined_flags');
 
     // Create with write access
-    final writeDb = LMDB2();
+    final writeDb = LMDB();
     final writeFlags = LMDBFlagSet()
       ..add(MDB_NOSUBDIR)
       ..add(MDB_NOSYNC); // Combine multiple flags
@@ -142,7 +142,7 @@ void main() {
     writeDb.close();
 
     // Open same file read-only
-    final readDb = LMDB2();
+    final readDb = LMDB();
     final readFlags = LMDBFlagSet()
       ..add(MDB_NOSUBDIR)
       ..add(MDB_RDONLY);
@@ -173,7 +173,7 @@ void main() {
       print('Test skipped on Windows - write map mode not supported (yet)');
       return;
     }
-    final db = LMDB2();
+    final db = LMDB();
     final writeMapFlags = LMDBFlagSet()..add(MDB_WRITEMAP);
 
     await db.init(
@@ -201,7 +201,7 @@ void main() {
     final dbPath = path.join(testDir.path, 'nolock_test');
 
     // First create and populate database
-    final writeDb = LMDB2();
+    final writeDb = LMDB();
     await writeDb.init(
       dbPath,
       config: LMDBInitConfig(mapSize: LMDBConfig.minMapSize),
@@ -220,7 +220,7 @@ void main() {
 
     // Create multiple readers
     final readers = await Future.wait(List.generate(5, (index) async {
-      final db = LMDB2();
+      final db = LMDB();
       await db.init(
         dbPath,
         config: LMDBInitConfig(mapSize: LMDBConfig.minMapSize),
@@ -247,7 +247,7 @@ void main() {
   });
 
   test('No TLS mode', () async {
-    final db = LMDB2();
+    final db = LMDB();
     final noTLSFlags = LMDBFlagSet()..add(MDB_NOTLS);
 
     await db.init(
@@ -277,7 +277,7 @@ void main() {
   });
 
   test('Transaction behavior with MDB_NOTLS', () async {
-    final db = LMDB2();
+    final db = LMDB();
     final noTLSFlags = LMDBFlagSet()..add(MDB_NOTLS);
 
     await db.init(
@@ -315,7 +315,7 @@ void main() {
   });
 
   test('No metadata sync mode', () async {
-    final db = LMDB2();
+    final db = LMDB();
     final noMetaSyncFlags = LMDBFlagSet()..add(MDB_NOMETASYNC);
 
     await db.init(
@@ -335,7 +335,7 @@ void main() {
   });
 
   test('Read ahead disabled mode', () async {
-    final db = LMDB2();
+    final db = LMDB();
     final noReadAheadFlags = LMDBFlagSet()..add(MDB_NORDAHEAD);
 
     await db.init(
@@ -364,7 +364,7 @@ void main() {
   });
 
   test('Multiple flag combinations', () async {
-    final db = LMDB2();
+    final db = LMDB();
     final combinedFlags = LMDBFlagSet()
       ..add(MDB_WRITEMAP)
       ..add(MDB_NOMETASYNC)

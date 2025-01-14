@@ -3,10 +3,10 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:test/test.dart';
 import 'package:path/path.dart' as path;
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 
 void main() {
-  late LMDB2 db;
+  late LMDB db;
   late String dbPath;
   late Directory testDir;
 
@@ -27,7 +27,7 @@ void main() {
     dbPath = testDir.path;
 
     // Initialize database
-    db = LMDB2();
+    db = LMDB();
     try {
       final config = LMDBInitConfig(
         mapSize: LMDBConfig.minMapSize,
@@ -109,7 +109,7 @@ void main() {
       'large_db_${DateTime.now().millisecondsSinceEpoch}',
     );
 
-    final largeDb = LMDB2();
+    final largeDb = LMDB();
     await largeDb.init(largeDbPath, config: config);
 
     final random = Random();
