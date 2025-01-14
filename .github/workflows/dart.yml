@@ -33,7 +33,7 @@ jobs:
         if: matrix.build-android
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r25c
+          ndk-version: r27c
           local-cache: true
         id: setup-ndk
 
