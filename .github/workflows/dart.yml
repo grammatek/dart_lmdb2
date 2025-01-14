@@ -14,8 +14,10 @@ jobs:
         include:
           - os: ubuntu-latest
             cmake-install: sudo apt-get install -y cmake build-essential
+            build-android: true
           - os: macos-latest
             cmake-install: brew install cmake
+            build-ios: true
           - os: windows-latest
             cmake-install: choco install cmake
     runs-on: ${{ matrix.os }}
@@ -24,19 +26,42 @@ jobs:
         working-directory: ./dart_lmdb2
     steps:
       - uses: actions/checkout@v4
-
       - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+
+      # Setup Android NDK (only Linux)
+      - name: Setup Android NDK
+        if: matrix.build-android
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          local-cache: true
+        id: setup-ndk
+
+      - name: Set NDK path
+        if: matrix.build-android
+        run: echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
 
       - name: Install CMake and build tools
         run: ${{ matrix.cmake-install }}
 
       - name: Install dependencies
-        run: |
-          dart pub get
+        run: dart pub get
 
+      # Native Builds
       - name: Build native library
         run: dart run tool/build.dart
 
+      # Android Build
+      - name: Build Android libraries
+        if: matrix.build-android
+        run: dart run tool/build.dart --android
+
+      # iOS Build
+      - name: Build iOS library
+        if: matrix.build-ios
+        run: dart run tool/build.dart --ios
+
+      # Tests and analysis
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 
@@ -44,7 +69,14 @@ jobs:
         run: dart analyze --fatal-infos
 
       - name: Run tests
+        if: ${{ !matrix.build-android && !matrix.build-ios }}
         run: dart test -j 1
+
+      - name: Upload native libraries
+        uses: actions/upload-artifact@v3
+        with:
+          name: native-lib-${{ matrix.os }}
+          path: dart_lmdb2/dart_lmdb2/lib/src/native/
 
   build_test_flutter_lmbd2:
     strategy:
