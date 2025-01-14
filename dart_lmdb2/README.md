@@ -5,8 +5,10 @@ A high-performance, embedded database for Dart applications, wrapping LMDB (Ligh
 [![Pub Version](https://img.shields.io/pub/v/dart_lmdb2?logo=dart)](https://pub.dev/packages/dart_lmdb2)
 
 |Linux|Windows|Android|MacOS|iOS|web|
-|:-:|:-:|:-:|:-:|:-:|:-:|
-|💙|💙|-|💙|💙|-|
+|:-:|:-:|::|:-:|:-:|:-:|
+|💙|💙|💙|💙|💙|-|
+
+**Note: Precompiled native binaries for all platforms are bundled inside the Dart package, but for iOS/Android you need Flutter to run them on your mobile device. See [flutter_lmdb2](https://github.com/grammatek/dart_lmdb2/tree/master/flutter_lmdb2)**
 
 ## Why LMDB?
 
@@ -119,7 +121,7 @@ Dart LMDB Wrapper:
 Add the package to your `pubspec.yaml`:
 ```yaml
 dependencies:
-  dart_lmdb2: ^0.9.0
+  dart_lmdb2: ^0.9
 ```
 
 Then run:
@@ -174,17 +176,49 @@ await db.init('path/to/db', config: config);
 
 ## Development
 
-If you're developing this package:
+All native libraries are already bundled inside the directory `lib/src/native`:
+```bash
+> tree lib/src/native/
+lib/src/native/
+├── android
+│   ├── arm64-v8a
+│   │   └── liblmdb.so
+│   └── x86_64
+│       └── liblmdb.so
+├── ios
+│   └── liblmdb.a
+├── linux
+│   └── liblmdb.so
+├── macos
+│   └── liblmdb.dylib
+└── windows
+    └── lmdb.dll
+```
+
+You can rebuild these via the following steps:
 
 ### Prerequisites
 
-This package requires LMDB to be built from source. The build process is automated but requires:
+This package bundles LMDB to be built from source. The build process is automated but requires:
 
 - CMake (3.10 or higher)
 - C compiler (gcc, clang, or MSVC)
 - Dart SDK (3.0 or higher)
 
 ### Platform-specific setup
+
+#### Android
+
+You need to have installed the Android NDK, ideally via Android Studio. Furthermore. you need to have the environment variable `ANDROID_NDK_HOME` set to the appropriate NDK location.
+
+#### iOS / iPadOS / MacOS
+
+Please install XCode and the XCode command line tools.
+
+```bash
+# Install build tools
+brew install cmake
+```
 
 #### Linux
 
@@ -193,24 +227,17 @@ This package requires LMDB to be built from source. The build process is automat
 sudo apt-get install build-essential cmake
 ```
 
-#### MacOS
-
-```bash
-# Install build tools
-brew install cmake
-```
-
 #### Windows
 
 - Install Visual Studio with C++ development tools
 - Install CMake
 
+### Build & Test
 
-## Setup
-
-1. Clone the repository:
+1. Clone the repository and change to the project subdirectory:
 ```bash
 git clone https://github.com/grammatek/dart_lmdb2.git
+cd dart_lmdb2/dart_lmdb2
 ````
 
 2. Install dependencies:
@@ -227,15 +254,26 @@ dart run ffigen
 ```bash
 dart run tool/build.dart
 ```
+For Android, you need to pass the flag `--android`:
 
-5. Run tests:
+```bash
+dart run tool/build.dart --android
+```
+
+For iOS/iPadOS, you need to pass the flag `--ios`:
+
+```bash
+dart run tool/build.dart --ios
+```
+
+5. Run tests for active platform:
 ```bash
 dart test
 ```
 
 ## CREDITS
 
-Many thanks go to the OpenLDAP team to provide such a fantastic lightweight, portable and easy to use database. You can access the original source-code either directly as a GitHub [standalone version](https://github.com/LMDB/lmdb) or via the [OpenLDAP](https://git.openldap.org/openldap/openldap/tree/mdb.master) GitLab repository.
+Many thanks to the OpenLDAP team to provide such a fantastic lightweight, portable and easy to use database. You can access the original source-code either directly as a GitHub [standalone version](https://github.com/LMDB/lmdb) or via the [OpenLDAP](https://git.openldap.org/openldap/openldap/tree/mdb.master) GitLab repository.
 
 ## LICENSE
 

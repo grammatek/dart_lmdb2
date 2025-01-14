@@ -6,8 +6,7 @@
 # https://dart.dev/guides/libraries/private-files#pubspeclock.
 pubspec.lock
 
-build/
-build-ios*/
+build*/
 doc/api/
 .DS_Store
 .idea/
@@ -15,6 +14,7 @@ doc/api/
 *.dylib
 *.dll
 *.so
-!lib/src/native/liblmdb.dylib
-!lib/src/native/liblmdb.so
-!lib/src/native/lmdb.dll
+!lib/src/native/**/*.a
+!lib/src/native/**/*.dll
+!lib/src/native/**/*.dylib
+!lib/src/native/**/*.so

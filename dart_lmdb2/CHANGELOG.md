@@ -1,4 +1,12 @@
+## 0.9.3
+
+* Add support for Android 64-bit
+* Bundle binaries for all supported platforms (unfortunately no web-assembly)
+* Build all platforms on CI
+* Reorganize directory structure for all native libraries
+
 ## 0.9.2
+
 * change exported dart file from dart_lmdb2.dart => lmdb.dart
 * change LMDB2 class name to LMDB
 

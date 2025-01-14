@@ -7,6 +7,8 @@ void main(List<String> args) async {
   try {
     if (args.contains('--ios')) {
       await buildIosLibrary(projectDir);
+    } else if (args.contains('--android')) {
+      await buildAndroidLibrary(projectDir);
     } else {
       await buildNativeLibrary(projectDir);
     }

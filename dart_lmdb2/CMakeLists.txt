@@ -1,13 +1,27 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 project(dart_lmdb2 C)
 
-# MacOS Universal Binary Support
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.29")
+    cmake_policy(SET CMP0156 NEW)
+endif()
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.31")
+    cmake_policy(SET CMP0179 NEW)
+endif()
+
+# Platform detection
+
+if(ANDROID)
+    message(STATUS "Configuring for Android")
+    set(BUILD_SHARED_LIBS ON)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ANDROID_ABI})
+endif()
+
 if(APPLE AND NOT IOS)
+    # MacOS Universal Binary Support
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
     message(STATUS "Building Universal Binary for macOS (arm64 + x86_64)")
 endif()
 
-# Platform detection
 if(IOS)
     message(STATUS "Configuring for iOS")
     set(CMAKE_SYSTEM_NAME iOS)
@@ -43,7 +57,11 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Platform specific settings
-if(APPLE)
+
+if(ANDROID)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    add_definitions(-DANDROID)
+elseif(APPLE)
     if(NOT IOS)
         set(CMAKE_MACOSX_RPATH ON)
         set(CMAKE_INSTALL_RPATH "@executable_path;@loader_path")
@@ -76,16 +94,21 @@ set_target_properties(lmdb PROPERTIES
     PUBLIC_HEADER "src/include/lmdb.h;src/include/midl.h"
 )
 
-if(NOT IOS)
-    set_target_properties(lmdb PROPERTIES
-        WINDOWS_EXPORT_ALL_SYMBOLS ON
-    )
-endif()
-
 if(WIN32)
     set_target_properties(lmdb PROPERTIES
         PREFIX ""
         OUTPUT_NAME "lmdb"
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+endif()
+
+
+if(IOS)
+    # Disable BITCODE as it's deprecated
+    set_target_properties(lmdb PROPERTIES
+            XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
+            XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH "NO"
+            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "12.0"
     )
 endif()
 
@@ -95,19 +118,5 @@ if(NOT IOS)
     install(TARGETS lmdb
         LIBRARY DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
         PUBLIC_HEADER DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/include
-    )
-endif()
-
-# iOS specific configurations
-if(IOS)
-    # Disable BITCODE as it's deprecated
-    set_target_properties(lmdb PROPERTIES
-        XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
-        XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH "NO"
-    )
-
-    # Set deployment target
-    set_target_properties(lmdb PROPERTIES
-        XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "12.0"
     )
 endif()
