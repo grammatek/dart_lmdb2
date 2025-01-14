@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 import 'dart:io';
 import 'dart:math';
 import 'package:path/path.dart' as path;
@@ -32,7 +32,7 @@ void main() {
   });
 
   test('DB size and read/write behavior test', () async {
-    final db = LMDB2();
+    final db = LMDB();
     final largeMapSize = 100 * 1024 * 1024; // 100MB
 
     // 1. Create and fill large DB
@@ -96,7 +96,7 @@ void main() {
   });
 
   test('MapSize limit test', () async {
-    final db = LMDB2();
+    final db = LMDB();
     final smallMapSize = 1 * 1024 * 1024; // 1MB
 
     await db.init(testDir.path, config: LMDBInitConfig(mapSize: smallMapSize));
@@ -123,7 +123,7 @@ void main() {
   });
 
   test('MapSize growth test', () async {
-    final db = LMDB2();
+    final db = LMDB();
 
     // 1. create db with small initial mapsize:
     final initialMapSize = 10 * 1024 * 1024; // 10MB
@@ -182,7 +182,7 @@ void main() {
   });
 
   test('MapSize read performance comparison', () async {
-    final db = LMDB2();
+    final db = LMDB();
     final largeMapSize = 100 * 1024 * 1024; // 100MB
 
     // 1. First create a large database

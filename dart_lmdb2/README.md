@@ -102,7 +102,7 @@ LMDB Core:
 - Platform-independent data format
 - Minimal, efficient C implementation
 
-Dart LMDB2 Wrapper:
+Dart LMDB Wrapper:
 
 - Efficient FFI integration for native performance
 - Flexible transaction management (auto/manual)
@@ -138,7 +138,7 @@ Import and use:
 import 'package:lmdb2/lmdb2.dart';
 
 void main() async {
-    final db = LMDB2();
+    final db = ();
     await db.init('path/to/db');
 
     // Simple auto-transaction operations

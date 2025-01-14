@@ -18,7 +18,7 @@
 ///
 /// Simple string operations with automatic transactions:
 /// ```dart
-/// final db = LMDB2();
+/// final db = LMDB();
 /// await db.init('/path/to/db');
 ///
 /// // Store and retrieve data
@@ -117,7 +117,7 @@
 ///
 /// Example Usage:
 /// ```dart
-///     final db = LMDB2();
+///     final db = LMDB();
 ///     // Open with 100MB initial size
 ///     await db.init(path, config: LMDBInitConfig(mapSize: 100 * 1024 * 1024));
 /// ```
@@ -315,7 +315,7 @@
 library;
 
 export 'src/database_stats.dart';
-export 'src/lmdb2.dart';
+export 'src/lmdb_class.dart';
 export 'src/lmdb_config.dart';
 export 'src/lmdb_constants.dart';
 export 'src/lmdb_cursor.dart';

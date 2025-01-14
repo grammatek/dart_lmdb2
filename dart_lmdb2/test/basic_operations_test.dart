@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:math';
 import 'package:test/test.dart';
 import 'package:path/path.dart' as path;
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 
 void main() {
-  late LMDB2 db;
+  late LMDB db;
   late String dbPath;
   late Directory testDir;
 
@@ -26,7 +26,7 @@ void main() {
     dbPath = testDir.path;
 
     // Initialize database
-    db = LMDB2();
+    db = LMDB();
     try {
       final config = LMDBInitConfig(
         mapSize: LMDBConfig.minMapSize,
@@ -57,7 +57,7 @@ void main() {
     }
   });
 
-  test('LMDB2 Version', () {
+  test(' Version', () {
     final version = db.getVersion();
     expect(version, contains('LMDB'));
   });
@@ -90,7 +90,7 @@ void main() {
   });
 
   test('UTF-8 string operations', () async {
-    final db = LMDB2();
+    final db = LMDB();
     await db.init(testDir.path);
 
     // Test with different string types

@@ -4,11 +4,11 @@ import 'dart:io';
 import 'dart:math';
 import 'package:test/test.dart';
 import 'package:path/path.dart' as path;
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 
 // Helper function for transaction management
 Future<T> _withTransaction<T>(
-  LMDB2 db,
+  LMDB db,
   Future<T> Function(Pointer<MDB_txn> txn) action, {
   bool readOnly = false,
 }) async {
@@ -34,7 +34,7 @@ class PageResult {
 }
 
 void main() {
-  late LMDB2 db;
+  late LMDB db;
   late String dbPath;
   late Directory testDir;
 
@@ -55,7 +55,7 @@ void main() {
     dbPath = testDir.path;
 
     // Initialize database
-    db = LMDB2();
+    db = LMDB();
     try {
       final config = LMDBInitConfig(
         mapSize: LMDBConfig.minMapSize,

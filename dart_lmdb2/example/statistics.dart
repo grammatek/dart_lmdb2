@@ -1,10 +1,10 @@
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
 
 /// This example demonstrates how to get and analyze database statistics.
 void main() async {
-  final db = LMDB2();
+  final db = LMDB();
 
   // Initialize with custom configuration
   final config = LMDBInitConfig.fromEstimate(

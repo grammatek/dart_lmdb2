@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:math';
 import 'package:test/test.dart';
 import 'package:path/path.dart' as path;
-import 'package:dart_lmdb2/dart_lmdb2.dart';
+import 'package:dart_lmdb2/lmdb.dart';
 
 void main() {
-  late LMDB2 db;
+  late LMDB db;
   late String dbPath;
   late Directory testDir;
 
@@ -26,7 +26,7 @@ void main() {
     dbPath = testDir.path;
 
     // Initialize database
-    db = LMDB2();
+    db = LMDB();
     try {
       final config = LMDBInitConfig(
         mapSize: LMDBConfig.minMapSize,
@@ -130,7 +130,7 @@ void main() {
   });
 
   test('Normal transaction behavior (without MDB_NOTLS)', () async {
-    final db = LMDB2();
+    final db = LMDB();
     await db.init(
       testDir.path,
       config: LMDBInitConfig(mapSize: LMDBConfig.minMapSize),
@@ -195,7 +195,7 @@ void main() {
   });
 
   test('Advanced transaction scenarios', () async {
-    final db = LMDB2();
+    final db = LMDB();
     await db.init(
       testDir.path,
       config: LMDBInitConfig(
@@ -319,9 +319,9 @@ void main() {
 
   test('Parallel read-only transactions with multiple environments', () async {
     // Create multiple LMDB instances for parallel access
-    final db1 = LMDB2();
-    final db2 = LMDB2();
-    final db3 = LMDB2();
+    final db1 = LMDB();
+    final db2 = LMDB();
+    final db3 = LMDB();
 
     // Initialize all instances with the same database
     await db1.init(
@@ -448,9 +448,9 @@ void main() {
   });
 
   test('Parallel transactions across multiple environments', () async {
-    final db1 = LMDB2();
-    final db2 = LMDB2();
-    final db3 = LMDB2();
+    final db1 = LMDB();
+    final db2 = LMDB();
+    final db3 = LMDB();
 
     // Initialize all instances with the same database
     await Future.wait([

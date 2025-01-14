@@ -14,7 +14,7 @@ import 'lmdb_native.dart';
 
 /// A high-level Dart interface for LMDB (Lightning Memory-Mapped Database).
 ///
-/// LMDB2 provides a Dart-friendly API for interacting with LMDB, featuring:
+/// LMDB provides a Dart-friendly API for interacting with LMDB, featuring:
 /// * Automatic transaction management
 /// * UTF-8 string support
 /// * Named databases
@@ -22,7 +22,7 @@ import 'lmdb_native.dart';
 ///
 /// Basic usage:
 /// ```dart
-/// final db = LMDB2();
+/// final db = LMDB();
 ///
 /// // Initialize the database
 /// await db.init('/path/to/db');
@@ -40,7 +40,7 @@ import 'lmdb_native.dart';
 ///
 /// Advanced usage with explicit transactions:
 /// ```dart
-/// final db = LMDB2();
+/// final db = LMDB();
 /// await db.init('/path/to/db');
 ///
 /// final txn = await db.txnStart();
@@ -53,7 +53,7 @@ import 'lmdb_native.dart';
 ///   rethrow;
 /// }
 /// ```
-class LMDB2 {
+class LMDB {
   /// Native library bindings
   late final NativeLibrary _lib;
 
@@ -87,7 +87,7 @@ class LMDB2 {
   /// Creates a new LMDB instance and loads the native library.
   ///
   /// Note: Call [init] before performing any database operations.
-  LMDB2() {
+  LMDB() {
     _lib = LMDBNative.instance.lib;
   }
 
@@ -158,7 +158,7 @@ class LMDB2 {
   ///
   /// Example usage:
   /// ```dart
-  /// final db = LMDB2();
+  /// final db = LMDB();
   ///
   /// // Basic initialization
   /// await db.init('/path/to/db');
@@ -1656,7 +1656,7 @@ class LMDB2 {
   ///
   /// Example:
   /// ```dart
-  /// final db = LMDB2();
+  /// final db = LMDB();
   /// try {
   ///   await db.init('/path/to/db');
   ///   // ... use database
