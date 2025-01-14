@@ -1,10 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 project(dart_lmdb2 C)
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.29")
     cmake_policy(SET CMP0156 NEW)
 endif()
-
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.31")
+    cmake_policy(SET CMP0179 NEW)
+endif()
 
 # Platform detection
 

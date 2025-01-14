@@ -133,7 +133,7 @@ jobs:
       - name: Download all native libraries
         uses: actions/download-artifact@v3
         with:
-          path: dart_lmdb2/dart_lmdb2/lib/src/native/*
+          path: dart_lmdb2/dart_lmdb2/lib/src/native
         continue-on-error: true
       - name: Show collected artifacts
         run: |
@@ -144,7 +144,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: all-native-libraries
-          path: dart_lmdb2/dart_lmdb2/lib/src/native/*
+          path: dart_lmdb2/dart_lmdb2/lib/src/native
 
   publish_dart_lmbd2:
     needs: build_test_dart_lmbd2
