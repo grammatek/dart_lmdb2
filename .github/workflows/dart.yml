@@ -76,7 +76,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: native-lib-${{ matrix.os }}
-          path: dart_lmdb2/dart_lmdb2/lib/src/native/
+          path: dart_lmdb2/lib/src/native/
 
   build_test_flutter_lmbd2:
     strategy:
