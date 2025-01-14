@@ -2396,7 +2396,7 @@ typedef Dartmdb_filehandle_t = int;
 
 final class MDB_env extends ffi.Opaque {}
 
-/// @brief An opaque handle for a database transaction.
+/// An opaque handle for a database transaction.
 final class MDB_txn extends ffi.Opaque {}
 
 /// @brief A handle for an individual database in the DB environment.

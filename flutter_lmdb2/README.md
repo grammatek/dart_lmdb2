@@ -16,7 +16,7 @@ This package is a Flutter wrapper for [dart_lmdb2](https://github.com/grammatek/
 ## Installation
 ```yaml
 dependencies:
-  flutter_lmdb2: ^0.9.0
+  flutter_lmdb2: ^0.9
 
 ```
 ## Important Build Notes
