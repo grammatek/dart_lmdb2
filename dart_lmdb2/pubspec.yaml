@@ -38,6 +38,7 @@ example:
   include: ["example/**"]
 
 platforms:
+  android:
   ios:
   linux:
   macos:
