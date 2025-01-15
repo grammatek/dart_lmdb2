@@ -3,8 +3,8 @@
 # Run `pod lib lint flutter_lmdb2.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'flutter_lmdb2_example'
-  s.module_name      = 'flutter_lmdb2_example'
+  s.name             = 'flutter_lmdb2'
+  s.module_name      = 'flutter_lmdb2'
   s.version          = '0.9.0'
   s.summary          = 'LMDB for Flutter'
   s.description      = 'LMDB library for Flutter with iOS support'
