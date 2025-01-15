@@ -105,6 +105,7 @@ jobs:
         run: |
           flutter config --no-analytics --no-cli-animations
           flutter pub get
+          dart run tool/fetch_native.dart
       - name: iOS Setup
         if: matrix.os == 'macos-latest'
         run: |
@@ -114,15 +115,15 @@ jobs:
       - name: Build and Validate iOS Plugin
         if: matrix.os == 'macos-latest'
         run: |
-          dart run tool/build.dart --ios
-          cd ios || exit 1
+          cd example/ios || exit 1
           pod repo update
-          pod lib lint \
-            --allow-warnings \
-            --verbose \
-            --platforms=ios \
-            --skip-tests \
-            --no-clean
+          pod install --verbose
+          xcodebuild clean build \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO
 
   collect_artifacts:
     if: always()
