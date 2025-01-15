@@ -8,6 +8,8 @@ A high-performance, embedded database for Dart applications, wrapping LMDB (Ligh
 |:-:|:-:|:-:|:-:|:-:|:-:|
 |💙|💙|💙|💙|💙|-|
 
+---
+
 **Note: Precompiled native binaries for all platforms are bundled inside the Dart package, but for iOS/Android you need Flutter to run them on your mobile device. See [flutter_lmdb2](https://github.com/grammatek/dart_lmdb2/tree/master/flutter_lmdb2)**
 
 ## Why LMDB?
