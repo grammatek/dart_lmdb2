@@ -2,6 +2,7 @@
 
 * Compile iOS static library with `-DMDB_USE_POSIX_SEM`, otherwise it uses SYS-V semaphores,
   which are not supported
+* Support Android 15 16k page size
 
 ## 0.9.3
 
