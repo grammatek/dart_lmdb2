@@ -134,6 +134,7 @@ jobs:
       - name: Build Android Example
         run: |
           cd example
+          flutter doctor
           flutter build apk --release
 
   collect_artifacts:
