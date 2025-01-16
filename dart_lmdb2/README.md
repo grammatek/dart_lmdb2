@@ -84,37 +84,9 @@ The following LMDB functionality is exposed:
 - Comprehensive statistics and monitoring
 - Configurable initialization with all LMDB flags
 
-## Version Information
+## LMDB Version
 
 This package bundles LMDB version `0.9.70`. While this version number hasn't changed in 3 years, LMDB is actively maintained. We track the exact git repository version: [da9aeda](https://github.com/LMDB/lmdb/commit/da9aeda08c3ff710a0d47d61a079f5a905b0a10a).
-
-## Core Features
-
-LMDB Core:
-
-- Battle-tested database engine (from OpenLDAP)
-- ACID-compliant transactions
-- Crash-resistant with atomic commits
-- No write-ahead logging needed
-- Controlled memory usage via memory mapping
-- Flexible key/value storage supporting binary data
-- Prefix-based key queries
-- Multi-process/thread support
-- Non-blocking readers
-- Platform-independent data format
-- Minimal, efficient C implementation
-
-Dart LMDB Wrapper:
-
-- Efficient FFI integration for native performance
-- Flexible transaction management (auto/manual)
-- Safe resource handling and cleanup
-- Configurable database parameters
-- Comprehensive statistics and analysis
-- Cross-platform support
-- Extensive test coverage
-- CI/CD integration
-
 
 ## Getting Started
 
