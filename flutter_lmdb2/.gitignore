@@ -14,3 +14,4 @@ doc/api/
 *.a
 *.dylib
 *.dll
+*.so

@@ -65,6 +65,10 @@ elseif(APPLE)
     if(NOT IOS)
         set(CMAKE_MACOSX_RPATH ON)
         set(CMAKE_INSTALL_RPATH "@executable_path;@loader_path")
+    else()
+        # When building for iOS, LMDB must be compiled with POSIX semaphores instead of
+        # System V semaphores
+        add_definitions(-DMDB_USE_POSIX_SEM)
     endif()
 elseif(UNIX)
     set(CMAKE_INSTALL_RPATH "$ORIGIN")
@@ -93,6 +97,11 @@ set_target_properties(lmdb PROPERTIES
     SOVERSION 0
     PUBLIC_HEADER "src/include/lmdb.h;src/include/midl.h"
 )
+
+if (ANDROID)
+    # Support Android 15 16k page size
+    target_link_options(lmdb PRIVATE "-Wl,-z,max-page-size=16384")
+endif()
 
 if(WIN32)
     set_target_properties(lmdb PROPERTIES

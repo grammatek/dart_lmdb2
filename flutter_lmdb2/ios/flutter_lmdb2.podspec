@@ -14,16 +14,15 @@ Pod::Spec.new do |s|
   s.source           = { :git => 'https://github.com/grammatek/dart_lmdb2.git' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
-
   s.ios.deployment_target = '12.0'
 
   s.public_header_files = 'Classes/**/*.h'
-  s.vendored_libraries = 'liblmdb.a'
+  s.vendored_libraries = '${PODS_ROOT}/../.symlinks/plugins/flutter_lmdb2/lib/src/native/ios/liblmdb.a'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
-    'OTHER_LDFLAGS' => '$(inherited) -force_load "${PODS_ROOT}/../.symlinks/plugins/flutter_lmdb2/ios/liblmdb.a"',
+    'OTHER_LDFLAGS' => '$(inherited) -force_load "${PODS_ROOT}/../.symlinks/plugins/flutter_lmdb2/lib/src/native/ios/liblmdb.a"',
     'VALID_ARCHS' => 'arm64 x86_64',
     'IPHONEOS_DEPLOYMENT_TARGET' => '12.0'
   }

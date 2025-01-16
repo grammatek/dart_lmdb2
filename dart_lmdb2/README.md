@@ -7,6 +7,9 @@ A high-performance, embedded database for Dart applications, wrapping LMDB (Ligh
 |Linux|Windows|Android|MacOS|iOS|web|
 |:-:|:-:|:-:|:-:|:-:|:-:|
 |💙|💙|💙|💙|💙|-|
+
+---
+
 **Note: Precompiled native binaries for all platforms are bundled inside the Dart package, but for iOS/Android you need Flutter to run them on your mobile device. See [flutter_lmdb2](https://github.com/grammatek/dart_lmdb2/tree/master/flutter_lmdb2)**
 
 ## Why LMDB?
@@ -41,7 +44,17 @@ LMDB is particularly well-suited for mobile and embedded applications because:
   - Optional self-contained single file design simplifies backup operations
   - Battle-tested in OpenLDAP
 
-### Scenarios:
+## Why not LMDB ?
+
+LMDB is not a general purpose database. It's a DB for specific purposes and shines in these areas.
+
+You should not use LMDB, if
+- your schema is not K/V based, but relational
+- you need to efficiently query values additionally to keys
+- you want to save time series or streaming data (e.g. logging)
+- you cannot provide the same amount of RAM as your DB size **in write scenarios**
+
+## Scenarios:
 
 - Super fast querying of big DB's with minimal memory, e.g.
   - Dictionaries
@@ -59,18 +72,6 @@ LMDB is particularly well-suited for mobile and embedded applications because:
     - Flutter App -> AudioUnit Extension
     - Host -> Sandboxed Plugins
 - Configuration data (and lots of it)
-
-
-## Why not LMDB ?
-
-LMDB is not a general purpose database. It's a DB for specific purposes and shines in these areas.
-
-You should not use LMDB, if
-- your schema is not K/V based, but relational
-- you need to efficiently query values additionally to keys
-- you want to save time series or streaming data (e.g. logging)
-- you cannot provide the same amount of RAM as your DB size **in write scenarios**
-
 
 ## Supported Features
 

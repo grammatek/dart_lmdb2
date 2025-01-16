@@ -24,7 +24,8 @@ class LMDBNative {
       return DynamicLibrary.process();
     }
 
-    final libraryPath = _resolveLibraryPath();
+    final libraryPath =
+        Platform.isAndroid ? "liblmdb.so" : _resolveLibraryPath();
     return DynamicLibrary.open(libraryPath);
   }
 
