@@ -72,7 +72,7 @@ jobs:
         run: dart test -j 1
 
       - name: Upload native libraries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: native-lib-${{ matrix.os }}
           path: dart_lmdb2/lib/src/native/
@@ -152,7 +152,7 @@ jobs:
             ls -R dart_lmdb2/dart_lmdb2/lib/src/native/*
           fi
       - name: Upload collected artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: all-native-libraries
           path: dart_lmdb2/dart_lmdb2/lib/src/native
