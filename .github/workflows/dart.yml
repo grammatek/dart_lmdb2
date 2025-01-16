@@ -125,6 +125,17 @@ jobs:
             -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO
 
+      - name: Android Setup
+        run: |
+          flutter config --enable-android
+          flutter precache --android
+          yes | flutter doctor --android-licenses
+
+      - name: Build Android Example
+        run: |
+          cd example
+          flutter build apk --release
+
   collect_artifacts:
     if: always()
     needs: [build_test_dart_lmbd2, build_test_flutter_lmbd2]

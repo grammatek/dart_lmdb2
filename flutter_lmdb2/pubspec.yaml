@@ -27,9 +27,10 @@ flutter:
     platforms:
       ios:
         pluginClass: FlutterLmdb2Plugin
-#      android:
-#        package: com.grammatek.flutter_lmdb2
-#        pluginClass: FlutterLmdb2Plugin
+      android:
+        package: com.grammatek.flutter_lmdb2
+        pluginClass: FlutterLmdb2Plugin
+        mainClass: FlutterLmdb2Plugin
 #      macos:
 #        pluginClass: FlutterLmdb2Plugin
 #      linux:

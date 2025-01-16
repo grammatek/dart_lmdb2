@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_lmdb2/lmdb.dart';
@@ -66,7 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       // Check directory permissions
       try {
-        final file = File('${dbPath}/test.txt');
+        final file = File('$dbPath/test.txt');
         await file.writeAsString('test');
         await file.delete();
         print('Directory permissions verified');
@@ -95,7 +96,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
 
       // Test write with error handling
-      late final txn;
+      late final Pointer<MDB_txn> txn;
       try {
         txn = await _db.txnStart();
         print('Transaction started');
@@ -126,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
 
       // Test read with error handling
-      late final readTxn;
+      late final Pointer<MDB_txn> readTxn;
       try {
         readTxn = await _db.txnStart();
       } catch (e) {
