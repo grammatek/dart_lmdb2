@@ -75,7 +75,24 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-lib-${{ matrix.os }}
-          path: dart_lmdb2/lib/src/native/
+          path: |
+            dart_lmdb2/lib/src/native/
+            !dart_lmdb2/lib/src/native/android/
+            !dart_lmdb2/lib/src/native/ios/
+
+      - name: Upload Android libraries
+        if: matrix.build-android
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-lib-android
+          path: dart_lmdb2/lib/src/native/android/
+
+      - name: Upload iOS libraries
+        if: matrix.build-ios
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-lib-ios
+          path: dart_lmdb2/lib/src/native/ios/
 
   build_test_flutter_lmdb2:
     strategy:
@@ -155,21 +172,32 @@ jobs:
     needs: [build_test_dart_lmdb2, build_test_flutter_lmdb2]
     runs-on: ubuntu-latest
     steps:
-      - name: Download all native libraries
+      - name: Download all platform libraries
         uses: actions/download-artifact@v3
         with:
-          path: dart_lmdb2/dart_lmdb2/lib/src/native
+          path: collected_artifacts
         continue-on-error: true
+
       - name: Show collected artifacts
         run: |
-          if [ -d "dart_lmdb2/dart_lmdb2/lib/src/native/*" ]; then
-            ls -R dart_lmdb2/dart_lmdb2/lib/src/native/*
-          fi
-      - name: Upload collected artifacts
+          echo "Collected artifacts:"
+          find collected_artifacts -type f -name "*.dylib" -o -name "*.a" -o -name "*.so" -o -name "*.dll" -o -name "*.lib" | sort
+
+      - name: Prepare final artifact structure
+        run: |
+          mkdir -p final_artifacts/lib/src/native
+          # Copy platform specific files
+          cp -r collected_artifacts/native-lib-*/macos final_artifacts/lib/src/native/ || true
+          cp -r collected_artifacts/native-lib-*/windows final_artifacts/lib/src/native/ || true
+          cp -r collected_artifacts/native-lib-*/linux final_artifacts/lib/src/native/ || true
+          cp -r collected_artifacts/native-lib-android/* final_artifacts/lib/src/native/android/ || true
+          cp -r collected_artifacts/native-lib-ios/* final_artifacts/lib/src/native/ios/ || true
+
+      - name: Upload final artifacts
         uses: actions/upload-artifact@v4
         with:
           name: all-native-libraries
-          path: dart_lmdb2/dart_lmdb2/lib/src/native
+          path: final_artifacts/lib/src/native
 
   publish_dart_lmdb2:
     needs: build_test_dart_lmdb2
