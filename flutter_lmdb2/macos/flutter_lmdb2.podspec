@@ -19,18 +19,47 @@ Pod::Spec.new do |s|
     'MACOSX_DEPLOYMENT_TARGET' => '10.13',
   }
 
- # s.script_phase = {
- #     'name' => 'Copy and Configure LMDB Library',
- #    'execution_position' => :before_compile,
- #    'script' => <<~SCRIPT
- #      mkdir -p "${PODS_ROOT}/Frameworks"
- #      cp -f "${PODS_ROOT}/../lib/src/native/macos/liblmdb.dylib" "${PODS_ROOT}/Frameworks/"
- #      install_name_tool -id "@rpath/liblmdb.dylib" "${PODS_ROOT}/Frameworks/liblmdb.dylib"
- #    SCRIPT
- #   }
-#  s.prepare_command = <<-CMD
-#      mkdir -p Frameworks
-#      cp -f ../lib/src/native/macos/liblmdb.dylib Frameworks/
-#      install_name_tool -id "@rpath/liblmdb.dylib" Frameworks/liblmdb.dylib
-#    CMD
+ s.script_phase = {
+     :name => 'Copy Native Libraries',
+     :execution_position => :before_compile,
+     :script => <<-'SCRIPT'
+       # Parse package_config.json to find plugin path
+       PACKAGE_CONFIG="${SRCROOT}/../../.dart_tool/package_config.json"
+       if [ ! -f "$PACKAGE_CONFIG" ]; then
+         echo "Error: package_config.json not found"
+         exit 1
+       fi
+
+       # Extract flutter_lmdb2 path using jq or grep/sed
+       if command -v jq >/dev/null; then
+         PLUGIN_ROOT=$(jq -r '.packages[] | select(.name == "flutter_lmdb2") | .rootUri' "$PACKAGE_CONFIG" | sed 's/file:\/\///')
+       else
+         PLUGIN_ROOT=$(grep -A 2 '"name":"flutter_lmdb2"' "$PACKAGE_CONFIG" | grep rootUri | cut -d '"' -f 4 | sed 's/file:\/\///')
+       fi
+
+       if [ -z "$PLUGIN_ROOT" ]; then
+         echo "Error: Could not find flutter_lmdb2 in package_config.json"
+         exit 1
+       fi
+
+       echo "Plugin Root: $PLUGIN_ROOT"
+
+       SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
+       TARGET_DIR="${SRCROOT}/../../Frameworks"
+
+       echo "Source directory: ${SOURCE_DIR}"
+       echo "Target directory: ${TARGET_DIR}"
+
+       mkdir -p "${TARGET_DIR}"
+
+       if [ -d "${SOURCE_DIR}" ]; then
+         echo "Copying native libraries..."
+         cp -R "${SOURCE_DIR}"/* "${TARGET_DIR}/"
+       else
+         echo "Warning: Source directory not found"
+         exit 1
+       fi
+     SCRIPT
+   }
+
 end
