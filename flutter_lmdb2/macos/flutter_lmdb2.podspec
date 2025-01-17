@@ -39,7 +39,8 @@ LMDB library for Flutter with macOS support.
         fi
 
         SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-        TARGET_DIR="${TARGET_BUILD_DIR}/${PRODUCT_NAME}.framework"
+        #TARGET_DIR="${TARGET_BUILD_DIR}/${PRODUCT_NAME}.framework"
+        TARGET_DIR="Frameworks"
 
         echo "Directories:"
         echo "Source: ${SOURCE_DIR}"
@@ -53,7 +54,7 @@ LMDB library for Flutter with macOS support.
 
         # Update install name and sign
         install_name_tool -id "@rpath/liblmdb.dylib" "${TARGET_DIR}/liblmdb.dylib"
-        codesign --force --sign - "${TARGET_DIR}/liblmdb.dylib"
+        #codesign --force --sign - "${TARGET_DIR}/liblmdb.dylib"
       SCRIPT
     }
 
