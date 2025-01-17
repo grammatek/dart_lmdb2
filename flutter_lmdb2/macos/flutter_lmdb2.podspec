@@ -55,6 +55,7 @@ Pod::Spec.new do |s|
        if [ -d "${SOURCE_DIR}" ]; then
          echo "Copying native libraries..."
          cp -R "${SOURCE_DIR}"/* "${TARGET_DIR}/"
+         install_name_tool -id "@rpath/liblmdb.dylib" "${TARGET_DIR}/liblmdb.dylib"
        else
          echo "Warning: Source directory not found"
          exit 1

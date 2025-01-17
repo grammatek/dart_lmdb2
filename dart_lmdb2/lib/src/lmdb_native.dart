@@ -34,6 +34,7 @@ class LMDBNative {
         return DynamicLibrary.open('liblmdb.dylib');
       } catch (e) {
         // ignoring
+        print("Couldn't find MacOS native lib, trying default approach");
       }
     }
 

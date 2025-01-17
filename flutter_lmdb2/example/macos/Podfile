@@ -31,48 +31,7 @@ target 'Runner' do
   use_modular_headers!
 
   flutter_install_all_macos_pods File.dirname(File.realpath(__FILE__))
-=begin
-  script_phase(
-      name: 'Copy Native Libraries',
-      execution_position: :before_compile,
-      script: <<-'SCRIPT'
-        # Parse package_config.json to find plugin path
-        PACKAGE_CONFIG="${SRCROOT}/../.dart_tool/package_config.json"
-        if [ ! -f "$PACKAGE_CONFIG" ]; then
-          echo "Error: package_config.json not found"
-          exit 1
-        fi
-        # Extract flutter_lmdb2 path using jq or grep/sed
-        if command -v jq >/dev/null; then
-          PLUGIN_ROOT=$(jq -r '.packages[] | select(.name == "flutter_lmdb2") | .rootUri' "$PACKAGE_CONFIG" | sed 's/file:\/\///')
-        else
-          PLUGIN_ROOT=$(grep -A 2 '"name":"flutter_lmdb2"' "$PACKAGE_CONFIG" | grep rootUri | cut -d '"' -f 4 | sed 's/file:\/\///')
-        fi
-        if [ -z "$PLUGIN_ROOT" ]; then
-          echo "Error: Could not find flutter_lmdb2 in package_config.json"
-          exit 1
-        fi
-        echo "Plugin Root: $PLUGIN_ROOT"
 
-        SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-        TARGET_DIR="${SRCROOT}/Frameworks"
-
-        echo "Plugin directory: ${PLUGIN_ROOT}"
-        echo "Source directory: ${SOURCE_DIR}"
-        echo "Target directory: ${TARGET_DIR}"
-
-        mkdir -p "${TARGET_DIR}"
-
-        if [ -d "${SOURCE_DIR}" ]; then
-          echo "Copying native libraries..."
-          cp -R "${SOURCE_DIR}"/* "${TARGET_DIR}/"
-        else
-          echo "Warning: Source directory not found"
-          exit 1
-        fi
-  SCRIPT
-  )
-=end
   target 'RunnerTests' do
     inherit! :search_paths
   end
