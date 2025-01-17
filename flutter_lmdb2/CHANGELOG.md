@@ -1,3 +1,8 @@
+## 0.9.2
+
+* Internal name changes
+* Documentation updates
+
 ## 0.9.1
 
 * Revamp fetching logic of native libs

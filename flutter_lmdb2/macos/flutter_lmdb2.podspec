@@ -19,18 +19,18 @@ Pod::Spec.new do |s|
     'MACOSX_DEPLOYMENT_TARGET' => '10.13',
   }
 
-  s.script_phase = {
-      'name' => 'Copy and Configure LMDB Library',
-      'execution_position' => :before_compile,
-      'script' => <<~SCRIPT
-        mkdir -p "${PODS_TARGET_SRCROOT}/Frameworks"
-        cp -f "${PODS_TARGET_SRCROOT}/../lib/src/native/macos/liblmdb.dylib" "${PODS_TARGET_SRCROOT}/Frameworks/"
-        install_name_tool -id "@rpath/liblmdb.dylib" "${PODS_TARGET_SRCROOT}/Frameworks/liblmdb.dylib"
-      SCRIPT
-    }
-  s.prepare_command = <<-CMD
-      mkdir -p Frameworks
-      cp -f ../lib/src/native/macos/liblmdb.dylib Frameworks/
-      install_name_tool -id "@rpath/liblmdb.dylib" Frameworks/liblmdb.dylib
-    CMD
+ # s.script_phase = {
+ #     'name' => 'Copy and Configure LMDB Library',
+ #    'execution_position' => :before_compile,
+ #    'script' => <<~SCRIPT
+ #      mkdir -p "${PODS_ROOT}/Frameworks"
+ #      cp -f "${PODS_ROOT}/../lib/src/native/macos/liblmdb.dylib" "${PODS_ROOT}/Frameworks/"
+ #      install_name_tool -id "@rpath/liblmdb.dylib" "${PODS_ROOT}/Frameworks/liblmdb.dylib"
+ #    SCRIPT
+ #   }
+#  s.prepare_command = <<-CMD
+#      mkdir -p Frameworks
+#      cp -f ../lib/src/native/macos/liblmdb.dylib Frameworks/
+#      install_name_tool -id "@rpath/liblmdb.dylib" Frameworks/liblmdb.dylib
+#    CMD
 end

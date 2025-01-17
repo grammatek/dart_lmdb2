@@ -235,6 +235,7 @@
 			buildConfigurationList = 33CC10FB2044A3C60003C045 /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
 				15D74A5EC28EA996ED02AE53 /* [CP] Check Pods Manifest.lock */,
+				D5E0337D1D497801B5BD1E33 /* [CP-User] Copy Native Libraries */,
 				33CC10E92044A3C60003C045 /* Sources */,
 				33CC10EA2044A3C60003C045 /* Frameworks */,
 				33CC10EB2044A3C60003C045 /* Resources */,
@@ -421,6 +422,16 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		D5E0337D1D497801B5BD1E33 /* [CP-User] Copy Native Libraries */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "[CP-User] Copy Native Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "        # Flutter-Projekt-Root ermitteln\n        FLUTTER_ROOT=$(cat \"${SRCROOT}/Flutter/ephemeral/Flutter-Generated.xcconfig\" | grep 'FLUTTER_ROOT=' | cut -d'=' -f2)\n\n        # Pfade konstruieren\n        PLUGIN_DIR=\"${SRCROOT}/../../flutter_lmdb2\"\n        SOURCE_DIR=\"${PLUGIN_DIR}/lib/native/macos\"\n        TARGET_DIR=\"${PLUGIN_DIR}/macos/Frameworks\"\n\n        echo \"Plugin directory: ${PLUGIN_DIR}\"\n        echo \"Source directory: ${SOURCE_DIR}\"\n        echo \"Target directory: ${TARGET_DIR}\"\n\n        mkdir -p \"${TARGET_DIR}\"\n\n        if [ -d \"${SOURCE_DIR}\" ]; then\n          echo \"Copying native libraries...\"\n          cp -R \"${SOURCE_DIR}\"/* \"${TARGET_DIR}/\"\n        else\n          echo \"Warning: Source directory not found\"\n          exit 1\n        fi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

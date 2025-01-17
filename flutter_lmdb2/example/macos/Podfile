@@ -31,6 +31,35 @@ target 'Runner' do
   use_modular_headers!
 
   flutter_install_all_macos_pods File.dirname(File.realpath(__FILE__))
+
+  script_phase(
+      name: 'Copy Native Libraries',
+      execution_position: :before_compile,
+      script: <<-'SCRIPT'
+        # Flutter-Projekt-Root ermitteln
+        FLUTTER_ROOT=$(cat "${SRCROOT}/Flutter/ephemeral/Flutter-Generated.xcconfig" | grep 'FLUTTER_ROOT=' | cut -d'=' -f2)
+
+        # Pfade konstruieren
+        PLUGIN_DIR="${SRCROOT}/../../flutter_lmdb2"
+        SOURCE_DIR="${PLUGIN_DIR}/lib/native/macos"
+        TARGET_DIR="${PLUGIN_DIR}/macos/Frameworks"
+
+        echo "Plugin directory: ${PLUGIN_DIR}"
+        echo "Source directory: ${SOURCE_DIR}"
+        echo "Target directory: ${TARGET_DIR}"
+
+        mkdir -p "${TARGET_DIR}"
+
+        if [ -d "${SOURCE_DIR}" ]; then
+          echo "Copying native libraries..."
+          cp -R "${SOURCE_DIR}"/* "${TARGET_DIR}/"
+        else
+          echo "Warning: Source directory not found"
+          exit 1
+        fi
+  SCRIPT
+  )
+
   target 'RunnerTests' do
     inherit! :search_paths
   end
