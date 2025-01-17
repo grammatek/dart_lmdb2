@@ -39,7 +39,7 @@ LMDB library for Flutter with macOS support.
         fi
 
         SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-        TARGET_DIR="${SRCROOT}/../Frameworks"
+        TARGET_DIR="${SRCROOT}/../../Frameworks"
 
         echo "Copying from ${SOURCE_DIR} to ${TARGET_DIR}"
         mkdir -p "${TARGET_DIR}"
