@@ -39,23 +39,14 @@ LMDB library for Flutter with macOS support.
         fi
 
         SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-        #TARGET_DIR="${TARGET_BUILD_DIR}/${PRODUCT_NAME}.framework"
-        TARGET_DIR="Frameworks"
+        TARGET_DIR="${PODS_TARGET_SRCROOT}/Frameworks"
 
-        echo "Directories:"
-        echo "Source: ${SOURCE_DIR}"
-        echo "Target: ${TARGET_DIR}"
+        echo "Copying from ${SOURCE_DIR} to ${TARGET_DIR}"
 
-        # Create directories
         mkdir -p "${TARGET_DIR}"
-
-        # Copy and sign the dylib
         cp -f "${SOURCE_DIR}/liblmdb.dylib" "${TARGET_DIR}/"
-
-        # Update install name and sign
         install_name_tool -id "@rpath/liblmdb.dylib" "${TARGET_DIR}/liblmdb.dylib"
-        #codesign --force --sign - "${TARGET_DIR}/liblmdb.dylib"
-      SCRIPT
+        SCRIPT
     }
 
     s.dependency 'FlutterMacOS'
