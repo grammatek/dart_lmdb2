@@ -39,7 +39,7 @@ LMDB library for Flutter with macOS support.
         fi
 
         SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-        FRAMEWORK_DIR="${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/${PRODUCT_NAME}.framework"
+        FRAMEWORK_DIR="${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}"
         FRAMEWORK_LIBS="${FRAMEWORK_DIR}/Versions/A/Frameworks"
 
         echo "Directories:"
@@ -67,6 +67,7 @@ LMDB library for Flutter with macOS support.
 
     s.pod_target_xcconfig = {
       'DEFINES_MODULE' => 'YES',
-      'LD_RUNPATH_SEARCH_PATHS' => ['$(inherited) @executable_path/../Frameworks']
+      'LD_RUNPATH_SEARCH_PATHS' => ['$(inherited) @executable_path/../Frameworks'],
+      'OTHER_LDFLAGS' => '-ObjC'
     }
 end
