@@ -45,17 +45,16 @@ Pod::Spec.new do |s|
        echo "Plugin Root: $PLUGIN_ROOT"
 
        SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-       TARGET_DIR="${SRCROOT}/../../Frameworks"
+       APP_FRAMEWORKS="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}"
 
        echo "Source directory: ${SOURCE_DIR}"
-       echo "Target directory: ${TARGET_DIR}"
+       echo "APP_FRAMEWORKS directory: ${APP_FRAMEWORKS}"
 
-       mkdir -p "${TARGET_DIR}"
 
        if [ -d "${SOURCE_DIR}" ]; then
          echo "Copying native libraries..."
-         cp -R "${SOURCE_DIR}"/* "${TARGET_DIR}/"
-         install_name_tool -id "@rpath/liblmdb.dylib" "${TARGET_DIR}/liblmdb.dylib"
+         cp -R "${SOURCE_DIR}"/* "${APP_FRAMEWORKS}/"
+         install_name_tool -id "@rpath/liblmdb.dylib" "${APP_FRAMEWORKS}/liblmdb.dylib"
        else
          echo "Warning: Source directory not found"
          exit 1
