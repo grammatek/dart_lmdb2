@@ -65,6 +65,7 @@ elseif(APPLE)
     if(NOT IOS)
         set(CMAKE_MACOSX_RPATH ON)
         set(CMAKE_INSTALL_RPATH "@executable_path;@loader_path")
+        add_definitions(-DMDB_USE_POSIX_SEM)
     else()
         # When building for iOS, LMDB must be compiled with POSIX semaphores instead of
         # System V semaphores
