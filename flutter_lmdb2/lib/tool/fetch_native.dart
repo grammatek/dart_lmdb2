@@ -68,7 +68,7 @@ Future<void> copyDirectory(Directory source, Directory destination) async {
   }
 }
 
-Future<void> main() async {
+Future<void> fetch_native_libs() async {
   final packageName = 'dart_lmdb2';
 
   // Get source directory from package
