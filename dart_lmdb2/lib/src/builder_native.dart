@@ -5,7 +5,7 @@ import 'build_exception.dart';
 /// Get the platform-specific library names
 List<String> _getPlatformLibraryNames() {
   if (Platform.isWindows) {
-    return ['lmdb.dll', 'lmdb.lib']; // DLL und statische Lib
+    return ['lmdb.dll', 'lmdb_static.lib']; // DLL und statische Lib
   } else if (Platform.isMacOS) {
     return ['liblmdb.dylib', 'liblmdb.a'];
   } else if (Platform.isLinux) {
@@ -17,6 +17,29 @@ List<String> _getPlatformLibraryNames() {
     'Unsupported platform: ${Platform.operatingSystem}',
     1,
   );
+}
+
+/// Get platform-specific search paths
+List<String> _getWindowsSearchPaths(String buildDir, String libraryName) {
+  // First check if this is a static library request
+  if (libraryName.endsWith('.lib')) {
+    return [
+      path.join(
+          buildDir, 'lib', 'lmdb_static.lib'), // This is where it actually is
+      path.join(buildDir, 'lib', libraryName),
+      path.join(buildDir, 'Release', libraryName),
+      path.join(buildDir, 'x64', 'Release', libraryName),
+    ];
+  }
+
+  // Dynamic library paths
+  return [
+    path.join(buildDir, 'lib', 'Release', libraryName),
+    path.join(buildDir, 'Release', libraryName),
+    path.join(buildDir, 'bin', 'Release', libraryName),
+    path.join(buildDir, 'bin', libraryName),
+    path.join(buildDir, 'x64', 'Release', libraryName),
+  ];
 }
 
 /// Build the native library in the specified project directory
@@ -68,7 +91,6 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
 
   // Platform-specific build commands
   if (Platform.isWindows) {
-    // For Visual Studio: Use /verbosity:detailed
     result = await Process.run(
       'cmake',
       [
@@ -83,7 +105,6 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
       workingDirectory: projectDir.path,
     );
   } else {
-    // For Unix makefiles: Use VERBOSE=1
     result = await Process.run(
       'cmake',
       [
@@ -117,7 +138,7 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
     'lib',
     'src',
     'native',
-    Platform.operatingSystem, // 'windows', 'linux', 'macos'
+    Platform.operatingSystem,
   ));
 
   if (!platformDir.existsSync()) {
@@ -130,25 +151,19 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
     final File builtLib;
 
     if (Platform.isWindows) {
-      final possiblePaths = [
-        path.join(buildDir.path, 'lib', 'Release', libraryName),
-        path.join(buildDir.path, 'Release', libraryName),
-        path.join(buildDir.path, 'bin', 'Release', libraryName),
-        path.join(buildDir.path, 'bin', libraryName),
-        path.join(buildDir.path, 'x64', 'Release', libraryName),
-        // Additional paths for static library
-        path.join(buildDir.path, 'Release', 'lmdb_static.lib'),
-        path.join(buildDir.path, 'lmdb_static.lib'),
-        path.join(buildDir.path, 'x64', 'Release', 'lmdb_static.lib'),
-      ];
+      final possiblePaths = _getWindowsSearchPaths(buildDir.path, libraryName);
+      print('Searching for $libraryName in:');
+      possiblePaths.forEach((p) => print('  $p'));
 
       builtLib = possiblePaths.map((p) => File(p)).firstWhere(
-        (f) => f.existsSync(),
-        orElse: () {
-          print('Searched for library in:');
-          for (final p in possiblePaths) {
-            print('  $p');
+        (f) {
+          final exists = f.existsSync();
+          if (exists) {
+            print('Found library at: ${f.path}');
           }
+          return exists;
+        },
+        orElse: () {
           throw BuildException(
             'Could not find built library. Searched in: ${possiblePaths.join(", ")}',
             1,
