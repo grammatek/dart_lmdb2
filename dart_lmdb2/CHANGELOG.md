@@ -1,6 +1,11 @@
+## 0.9.7
+
+* MacOs: Check at runtime, if we need to dynamically link lmdb or if we are already statically 
+         linked.
+
 ## 0.9.6
 
-* Add static libraries for native builds as well. This is to make it easier for Flutter plugins to be built
+* Add static libraries for native builds. This is to make building Flutter plugins easier.
 
 ## 0.9.5
 
