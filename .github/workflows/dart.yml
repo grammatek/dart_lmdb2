@@ -136,12 +136,8 @@ jobs:
           cd example/ios || exit 1
           pod repo update
           pod install --verbose
-          xcodebuild clean build \
-            -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -sdk iphoneos \
-            CODE_SIGNING_ALLOWED=NO
+          cd ..
+          flutter build ios
 
       - name: Build and Validate MacOS Plugin
         if: matrix.os == 'macos-latest'
@@ -149,12 +145,8 @@ jobs:
           cd example/macos || exit 1
           pod repo update
           pod install --verbose
-          xcodebuild clean build \
-            -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -sdk macosx \
-            CODE_SIGNING_ALLOWED=NO
+          cd ..
+          flutter build macos
 
       - name: Android Setup
         run: |
