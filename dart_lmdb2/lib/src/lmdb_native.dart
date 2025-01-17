@@ -18,24 +18,31 @@ class LMDBNative {
     return _instance ??= LMDBNative._();
   }
 
+  bool _isStaticallyLinked() {
+    try {
+      final processLib = DynamicLibrary.process();
+      processLib.lookup('mdb_env_create');
+      // throws exception if the symbol is unknown
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   DynamicLibrary _openLibrary() {
     if (Platform.isIOS) {
       // for iOS the library is statically linked
       return DynamicLibrary.process();
     }
 
-    if (Platform.isAndroid) {
-      return DynamicLibrary.open("liblmdb.so");
+    if (Platform.isMacOS && _isStaticallyLinked()) {
+      // for MacOS the library might be statically linked, if used as Flutter
+      // plugin, but for normal Dart usage, it's still a dynamic lib
+      return DynamicLibrary.process();
     }
 
-    if (Platform.isMacOS) {
-      try {
-        // first try: this is for flutter environments
-        return DynamicLibrary.open('liblmdb.dylib');
-      } catch (e) {
-        // ignoring
-        print("Couldn't find MacOS native lib, trying default approach");
-      }
+    if (Platform.isAndroid) {
+      return DynamicLibrary.open("liblmdb.so");
     }
 
     // default dart_lmdb2 loading for non-Flutter platforms
