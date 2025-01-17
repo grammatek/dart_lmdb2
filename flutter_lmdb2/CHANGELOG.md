@@ -1,5 +1,6 @@
 ## 0.9.2
 
+* Revamp Mac OS build: also use static library for Flutter plugin
 * Internal name changes
 * Documentation updates
 
