@@ -1,3 +1,7 @@
+## 0.9.6
+
+* Add static libraries for native builds as well. This is to make it easier for Flutter plugins to be built
+
 ## 0.9.5
 
 * Adapt loading of shared library on MacOS to support Dart-only and Flutter equally
