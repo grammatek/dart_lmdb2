@@ -5,7 +5,7 @@ import 'build_exception.dart';
 /// Get the platform-specific library names
 List<String> _getPlatformLibraryNames() {
   if (Platform.isWindows) {
-    return ['lmdb.dll', 'lmdb_static.lib'];
+    return ['lmdb.dll', 'lmdb.lib']; // DLL und statische Lib
   } else if (Platform.isMacOS) {
     return ['liblmdb.dylib', 'liblmdb.a'];
   } else if (Platform.isLinux) {
@@ -68,32 +68,30 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
 
   // Platform-specific build commands
   if (Platform.isWindows) {
+    // For Visual Studio: Use /verbosity:detailed
     result = await Process.run(
       'cmake',
       [
-        '--build',
-        'build',
-        '--config',
-        'Release',
+        '--build', 'build',
+        '--config', 'Release',
         '--verbose',
-        '--',
+        '--', // Pass following arguments to the native build tool
         '/verbosity:normal',
-        '/p:PreferredToolArchitecture=x64',
-        '/clp:ShowCommandLine',
+        '/p:PreferredToolArchitecture=x64', // Use 64-bit tools
+        '/clp:ShowCommandLine', // Show complete command lines
       ],
       workingDirectory: projectDir.path,
     );
   } else {
+    // For Unix makefiles: Use VERBOSE=1
     result = await Process.run(
       'cmake',
       [
-        '--build',
-        'build',
-        '--config',
-        'Release',
+        '--build', 'build',
+        '--config', 'Release',
         '--verbose',
-        '--',
-        'VERBOSE=1',
+        '--', // Pass following arguments to the native build tool
+        'VERBOSE=1', // Show complete command lines
       ],
       workingDirectory: projectDir.path,
     );
@@ -119,7 +117,7 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
     'lib',
     'src',
     'native',
-    Platform.operatingSystem,
+    Platform.operatingSystem, // 'windows', 'linux', 'macos'
   ));
 
   if (!platformDir.existsSync()) {
@@ -127,9 +125,8 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
     platformDir.createSync(recursive: true);
   }
 
-  final libraryNames = _getPlatformLibraryNames();
-
-  for (final libraryName in libraryNames) {
+  // Copy all library types for the platform
+  for (final libraryName in _getPlatformLibraryNames()) {
     final File builtLib;
 
     if (Platform.isWindows) {
@@ -139,6 +136,10 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
         path.join(buildDir.path, 'bin', 'Release', libraryName),
         path.join(buildDir.path, 'bin', libraryName),
         path.join(buildDir.path, 'x64', 'Release', libraryName),
+        // Additional paths for static library
+        path.join(buildDir.path, 'Release', 'lmdb_static.lib'),
+        path.join(buildDir.path, 'lmdb_static.lib'),
+        path.join(buildDir.path, 'x64', 'Release', 'lmdb_static.lib'),
       ];
 
       builtLib = possiblePaths.map((p) => File(p)).firstWhere(
