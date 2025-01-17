@@ -39,26 +39,21 @@ LMDB library for Flutter with macOS support.
         fi
 
         SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-        FRAMEWORK_DIR="${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}"
-        FRAMEWORK_LIBS="${FRAMEWORK_DIR}/Versions/A/Frameworks"
+        TARGET_DIR="${TARGET_BUILD_DIR}/${PRODUCT_NAME}.framework"
 
         echo "Directories:"
         echo "Source: ${SOURCE_DIR}"
-        echo "Framework: ${FRAMEWORK_DIR}"
-        echo "Framework Libs: ${FRAMEWORK_LIBS}"
+        echo "Target: ${TARGET_DIR}"
 
-        # Create framework directories
-        mkdir -p "${FRAMEWORK_LIBS}"
+        # Create directories
+        mkdir -p "${TARGET_DIR}"
 
         # Copy and sign the dylib
-        cp -f "${SOURCE_DIR}/liblmdb.dylib" "${FRAMEWORK_LIBS}/"
+        cp -f "${SOURCE_DIR}/liblmdb.dylib" "${TARGET_DIR}/"
 
         # Update install name and sign
-        install_name_tool -id "@rpath/liblmdb.dylib" "${FRAMEWORK_LIBS}/liblmdb.dylib"
-        codesign --force --sign - "${FRAMEWORK_LIBS}/liblmdb.dylib"
-
-        # Sign the framework
-        codesign --force --sign - --deep "${FRAMEWORK_DIR}"
+        install_name_tool -id "@rpath/liblmdb.dylib" "${TARGET_DIR}/liblmdb.dylib"
+        codesign --force --sign - "${TARGET_DIR}/liblmdb.dylib"
       SCRIPT
     }
 
