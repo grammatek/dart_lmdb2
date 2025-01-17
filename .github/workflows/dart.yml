@@ -153,7 +153,7 @@ jobs:
           cd ..
           flutter pub get
           dart run flutter_lmdb2:fetch_native
-          flutter build macos --no-codesign
+          flutter build macos
 
       - name: Android Setup
         run: |
