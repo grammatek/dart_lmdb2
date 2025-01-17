@@ -9,6 +9,7 @@ on:
 jobs:
   build_test_dart_lmdb2:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
