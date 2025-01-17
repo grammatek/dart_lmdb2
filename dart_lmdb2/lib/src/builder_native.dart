@@ -5,7 +5,7 @@ import 'build_exception.dart';
 /// Get the platform-specific library names
 List<String> _getPlatformLibraryNames() {
   if (Platform.isWindows) {
-    return ['lmdb.dll', 'lmdb_static.lib']; // DLL und statische Lib
+    return ['lmdb.dll', 'lmdb_static.lib'];
   } else if (Platform.isMacOS) {
     return ['liblmdb.dylib', 'liblmdb.a'];
   } else if (Platform.isLinux) {
@@ -21,24 +21,13 @@ List<String> _getPlatformLibraryNames() {
 
 /// Get platform-specific search paths
 List<String> _getWindowsSearchPaths(String buildDir, String libraryName) {
-  // First check if this is a static library request
   if (libraryName.endsWith('.lib')) {
-    return [
-      path.join(
-          buildDir, 'lib', 'lmdb_static.lib'), // This is where it actually is
-      path.join(buildDir, 'lib', libraryName),
-      path.join(buildDir, 'Release', libraryName),
-      path.join(buildDir, 'x64', 'Release', libraryName),
-    ];
+    return [path.join(buildDir, 'lib', 'lmdb_static.lib')];
   }
 
-  // Dynamic library paths
   return [
-    path.join(buildDir, 'lib', 'Release', libraryName),
-    path.join(buildDir, 'Release', libraryName),
-    path.join(buildDir, 'bin', 'Release', libraryName),
     path.join(buildDir, 'bin', libraryName),
-    path.join(buildDir, 'x64', 'Release', libraryName),
+    path.join(buildDir, 'bin', 'Release', libraryName),
   ];
 }
 
@@ -152,24 +141,15 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
 
     if (Platform.isWindows) {
       final possiblePaths = _getWindowsSearchPaths(buildDir.path, libraryName);
-      print('Searching for $libraryName in:');
-      possiblePaths.forEach((p) => print('  $p'));
 
-      builtLib = possiblePaths.map((p) => File(p)).firstWhere(
-        (f) {
-          final exists = f.existsSync();
-          if (exists) {
-            print('Found library at: ${f.path}');
-          }
-          return exists;
-        },
-        orElse: () {
-          throw BuildException(
-            'Could not find built library. Searched in: ${possiblePaths.join(", ")}',
-            1,
-          );
-        },
-      );
+      if (possiblePaths.isEmpty) {
+        throw BuildException(
+          'Could not find built library: $libraryName',
+          1,
+        );
+      }
+
+      builtLib = File(possiblePaths.first);
     } else {
       // Unixoid systems
       builtLib = File(path.join(buildDir.path, 'lib', libraryName));
