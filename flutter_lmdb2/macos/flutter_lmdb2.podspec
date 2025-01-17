@@ -45,11 +45,10 @@ Pod::Spec.new do |s|
        echo "Plugin Root: $PLUGIN_ROOT"
 
        SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-       APP_FRAMEWORKS="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}"
+       APP_FRAMEWORKS="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
 
        echo "Source directory: ${SOURCE_DIR}"
        echo "APP_FRAMEWORKS directory: ${APP_FRAMEWORKS}"
-
 
        if [ -d "${SOURCE_DIR}" ]; then
          echo "Copying native libraries..."
