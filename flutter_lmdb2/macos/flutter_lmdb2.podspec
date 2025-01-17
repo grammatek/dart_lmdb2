@@ -13,11 +13,11 @@ LMDB library for Flutter with macOS support.
   s.dependency 'FlutterMacOS'
 
   s.platform = :osx, '10.11'
-  s.vendored_libraries = '${PODS_ROOT}/../.symlinks/plugins/flutter_lmdb2/lib/src/native/macos/liblmdb.a'
+  s.vendored_libraries = '${PODS_ROOT}/../Flutter/ephemeral/.symlinks/plugins/flutter_lmdb2/lib/src/native/macos/liblmdb.a'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'OTHER_LDFLAGS' => '$(inherited) -force_load "${PODS_ROOT}/../.symlinks/plugins/flutter_lmdb2/lib/src/native/macos/liblmdb.a"',
+    'OTHER_LDFLAGS' => '$(inherited) -force_load "${PODS_ROOT}/../Flutter/ephemeral/.symlinks/plugins/flutter_lmdb2/lib/src/native/macos/liblmdb.a"',
     'VALID_ARCHS' => 'arm64 x86_64',
   }
   s.swift_version = '5.0'
