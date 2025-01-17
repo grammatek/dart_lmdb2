@@ -5,17 +5,17 @@ Flutter bindings for LMDB (Lightning Memory-Mapped Database).  This package is a
 [![Pub Version](https://img.shields.io/pub/v/flutter_lmbd2?logo=dart)](https://pub.dev/packages/flutter_lmbd2)
 
 | Linux | Windows |Android| MacOS |iOS|web|
-|:-----:|:-------:|:-:|:-----:|:-:|:-:|
-|soon|soon|💙|soon|💙|-|
+|:-----:|:-------:|:-:|:-:|:-:|:-:|
+|soon|soon|💙|💙|💙|-|
 
 ## Features
 - Native LMDB integration for Flutter
-- Complete [dart_lmdb2](https://pub.dev/packages/dart_lmdb2) API available in Flutter applications
+- Complete [dart_lmdb2](https://pub.dev/packages/dart_lmdb2) API available inside Flutter applications
 
 ## Installation
 ```yaml
 dependencies:
-  flutter_lmdb2: ^0.9
+  flutter_lmdb2: ^0.9.0
 ```
 
 ## Additional Setup Steps
