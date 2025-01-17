@@ -45,7 +45,8 @@ Pod::Spec.new do |s|
        echo "Plugin Root: $PLUGIN_ROOT"
 
        SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-       APP_FRAMEWORKS="${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
+       #APP_FRAMEWORKS="${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
+       APP_FRAMEWORKS="${HOST_TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
 
        echo "Source directory: ${SOURCE_DIR}"
        echo "APP_FRAMEWORKS directory: ${APP_FRAMEWORKS}"
