@@ -1,4 +1,4 @@
-# dart_lmbd2
+# dart_lmdb2
 
 This project contains a Dart package to use LMDB from Dart via `dart::ffi`.
 

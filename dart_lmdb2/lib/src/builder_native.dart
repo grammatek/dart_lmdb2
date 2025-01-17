@@ -2,16 +2,16 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'build_exception.dart';
 
-/// Get the platform-specific library name
-String _getPlatformLibraryName() {
+/// Get the platform-specific library names
+List<String> _getPlatformLibraryNames() {
   if (Platform.isWindows) {
-    return 'lmdb.dll';
+    return ['lmdb.dll', 'lmdb_static.lib'];
   } else if (Platform.isMacOS) {
-    return 'liblmdb.dylib';
+    return ['liblmdb.dylib', 'liblmdb.a'];
   } else if (Platform.isLinux) {
-    return 'liblmdb.so';
+    return ['liblmdb.so', 'liblmdb.a'];
   } else if (Platform.isIOS) {
-    return 'liblmdb.a';
+    return ['liblmdb.a'];
   }
   throw BuildException(
     'Unsupported platform: ${Platform.operatingSystem}',
@@ -19,9 +19,21 @@ String _getPlatformLibraryName() {
   );
 }
 
+/// Get platform-specific search paths
+List<String> _getWindowsSearchPaths(String buildDir, String libraryName) {
+  if (libraryName.endsWith('.lib')) {
+    return [path.join(buildDir, 'lib', 'lmdb_static.lib')];
+  }
+
+  return [
+    path.join(buildDir, 'bin', libraryName),
+    path.join(buildDir, 'bin', 'Release', libraryName),
+  ];
+}
+
 /// Build the native library in the specified project directory
 Future<void> buildNativeLibrary(Directory projectDir) async {
-  print('Building LMDB native library...');
+  print('Building LMDB native libraries...');
   print('Project directory: ${projectDir.path}');
 
   // Create build directory
@@ -41,6 +53,8 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
       '-B',
       'build',
       '-DCMAKE_BUILD_TYPE=Release',
+      '-DBUILD_SHARED_LIBS=ON',
+      '-DBUILD_STATIC_LIBS=ON',
       '--debug-output',
       '-DCMAKE_VERBOSE_MAKEFILE=ON',
     ],
@@ -66,7 +80,6 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
 
   // Platform-specific build commands
   if (Platform.isWindows) {
-    // For Visual Studio: Use /verbosity:detailed
     result = await Process.run(
       'cmake',
       [
@@ -81,7 +94,6 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
       workingDirectory: projectDir.path,
     );
   } else {
-    // For Unix makefiles: Use VERBOSE=1
     result = await Process.run(
       'cmake',
       [
@@ -109,13 +121,13 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
     );
   }
 
-  // Copy the library to the lib directory
+  // Copy the libraries to the lib directory
   final platformDir = Directory(path.join(
     projectDir.path,
     'lib',
     'src',
     'native',
-    Platform.operatingSystem, // 'windows', 'linux', 'macos'
+    Platform.operatingSystem,
   ));
 
   if (!platformDir.existsSync()) {
@@ -123,51 +135,41 @@ Future<void> buildNativeLibrary(Directory projectDir) async {
     platformDir.createSync(recursive: true);
   }
 
-  final String libraryName = _getPlatformLibraryName();
-  final File builtLib;
+  // Copy all library types for the platform
+  for (final libraryName in _getPlatformLibraryNames()) {
+    final File builtLib;
 
-  if (Platform.isWindows) {
-    // Windows legt die DLL in verschiedene mögliche Verzeichnisse
-    final possiblePaths = [
-      path.join(buildDir.path, 'lib', 'Release', libraryName),
-      path.join(buildDir.path, 'Release', libraryName),
-      path.join(buildDir.path, 'bin', 'Release', libraryName),
-      path.join(buildDir.path, 'bin', libraryName),
-      path.join(buildDir.path, 'x64', 'Release', libraryName),
-    ];
+    if (Platform.isWindows) {
+      final possiblePaths = _getWindowsSearchPaths(buildDir.path, libraryName);
 
-    builtLib = possiblePaths.map((p) => File(p)).firstWhere(
-      (f) => f.existsSync(),
-      orElse: () {
-        print('Searched for library in:');
-        for (final p in possiblePaths) {
-          print('  $p');
-        }
+      if (possiblePaths.isEmpty) {
         throw BuildException(
-          'Could not find built library. Searched in: ${possiblePaths.join(", ")}',
+          'Could not find built library: $libraryName',
           1,
         );
-      },
-    );
-  } else {
-    // Unixoid systems
-    builtLib = File(path.join(buildDir.path, 'lib', libraryName));
-  }
+      }
 
-  final targetLib = File(path.join(platformDir.path, libraryName));
+      builtLib = File(possiblePaths.first);
+    } else {
+      // Unixoid systems
+      builtLib = File(path.join(buildDir.path, 'lib', libraryName));
+    }
 
-  if (builtLib.existsSync()) {
-    builtLib.copySync(targetLib.path);
-    print('Library successfully built and copied to: ${targetLib.path}');
-  } else {
-    print('Build directory contents:');
-    buildDir.listSync(recursive: true).forEach((entity) {
-      print('  ${entity.path}');
-    });
-    throw BuildException(
-      'Could not find built library: ${builtLib.path}',
-      1,
-    );
+    final targetLib = File(path.join(platformDir.path, libraryName));
+
+    if (builtLib.existsSync()) {
+      builtLib.copySync(targetLib.path);
+      print('Library successfully built and copied to: ${targetLib.path}');
+    } else {
+      print('Build directory contents:');
+      buildDir.listSync(recursive: true).forEach((entity) {
+        print('  ${entity.path}');
+      });
+      throw BuildException(
+        'Could not find built library: ${builtLib.path}',
+        1,
+      );
+    }
   }
 
   print('Build completed successfully!');

@@ -7,8 +7,9 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build_test_dart_lmbd2:
+  build_test_dart_lmdb2:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
@@ -75,9 +76,26 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-lib-${{ matrix.os }}
-          path: dart_lmdb2/lib/src/native/
+          path: |
+            dart_lmdb2/lib/src/native/
+            !dart_lmdb2/lib/src/native/android/
+            !dart_lmdb2/lib/src/native/ios/
 
-  build_test_flutter_lmbd2:
+      - name: Upload Android libraries
+        if: matrix.build-android
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-lib-android
+          path: dart_lmdb2/lib/src/native/android/
+
+      - name: Upload iOS libraries
+        if: matrix.build-ios
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-lib-ios
+          path: dart_lmdb2/lib/src/native/ios/
+
+  build_test_flutter_lmdb2:
     strategy:
       matrix:
         os: [macos-latest]
@@ -105,7 +123,10 @@ jobs:
         run: |
           flutter config --no-analytics --no-cli-animations
           flutter pub get
-          dart run tool/fetch_native.dart
+          cd example || exit 1
+          flutter pub get
+          cd ..
+          dart run flutter_lmdb2:fetch_native
       - name: iOS Setup
         if: matrix.os == 'macos-latest'
         run: |
@@ -118,12 +139,21 @@ jobs:
           cd example/ios || exit 1
           pod repo update
           pod install --verbose
-          xcodebuild clean build \
-            -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -sdk iphoneos \
-            CODE_SIGNING_ALLOWED=NO
+          cd ..
+          flutter pub get
+          dart run flutter_lmdb2:fetch_native
+          flutter build ios --no-codesign
+
+      - name: Build and Validate MacOS Plugin
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd example/macos || exit 1
+          pod repo update
+          pod install --verbose
+          cd ..
+          flutter pub get
+          dart run flutter_lmdb2:fetch_native
+          flutter build macos
 
       - name: Android Setup
         run: |
@@ -139,27 +169,38 @@ jobs:
 
   collect_artifacts:
     if: always()
-    needs: [build_test_dart_lmbd2, build_test_flutter_lmbd2]
+    needs: [build_test_dart_lmdb2, build_test_flutter_lmdb2]
     runs-on: ubuntu-latest
     steps:
-      - name: Download all native libraries
+      - name: Download all platform libraries
         uses: actions/download-artifact@v3
         with:
-          path: dart_lmdb2/dart_lmdb2/lib/src/native
+          path: collected_artifacts
         continue-on-error: true
+
       - name: Show collected artifacts
         run: |
-          if [ -d "dart_lmdb2/dart_lmdb2/lib/src/native/*" ]; then
-            ls -R dart_lmdb2/dart_lmdb2/lib/src/native/*
-          fi
-      - name: Upload collected artifacts
+          echo "Collected artifacts:"
+          find collected_artifacts -type f -name "*.dylib" -o -name "*.a" -o -name "*.so" -o -name "*.dll" -o -name "*.lib" | sort
+
+      - name: Prepare final artifact structure
+        run: |
+          mkdir -p final_artifacts/lib/src/native
+          # Copy platform specific files
+          cp -r collected_artifacts/native-lib-*/macos final_artifacts/lib/src/native/ || true
+          cp -r collected_artifacts/native-lib-*/windows final_artifacts/lib/src/native/ || true
+          cp -r collected_artifacts/native-lib-*/linux final_artifacts/lib/src/native/ || true
+          cp -r collected_artifacts/native-lib-android/* final_artifacts/lib/src/native/android/ || true
+          cp -r collected_artifacts/native-lib-ios/* final_artifacts/lib/src/native/ios/ || true
+
+      - name: Upload final artifacts
         uses: actions/upload-artifact@v4
         with:
           name: all-native-libraries
-          path: dart_lmdb2/dart_lmdb2/lib/src/native
+          path: final_artifacts/lib/src/native
 
-  publish_dart_lmbd2:
-    needs: build_test_dart_lmbd2
+  publish_dart_lmdb2:
+    needs: build_test_dart_lmdb2
     if: github.event_name == 'release' && github.event.action == 'created'
     runs-on: ubuntu-latest
     defaults:
@@ -181,8 +222,8 @@ jobs:
         env:
           PUB_CREDENTIALS: ${{ secrets.PUB_CREDENTIALS }}
 
-  docs_dart_lmbd2:
-    needs: build_test_dart_lmbd2
+  docs_dart_lmdb2:
+    needs: build_test_dart_lmdb2
     runs-on: ubuntu-latest
     defaults:
           run:

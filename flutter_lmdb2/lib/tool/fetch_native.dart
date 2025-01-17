@@ -68,18 +68,22 @@ Future<void> copyDirectory(Directory source, Directory destination) async {
   }
 }
 
-Future<void> main() async {
+Future<void> fetchNativeLibs() async {
   final packageName = 'dart_lmdb2';
+  final destPackageName = 'flutter_lmdb2';
 
-  // Get source directory from package
   final sourceDir = resolveNativeDir(packageName);
   if (sourceDir == null) {
     print('Error: Could not resolve native directory in package $packageName');
     exit(1);
   }
 
-  // Define target directory in local project
-  final targetDir = Directory('lib/src/native');
+  var targetDir = resolveNativeDir(destPackageName);
+  if (targetDir == null) {
+    print('Warning: Could not resolve package directory of $destPackageName');
+    targetDir = Directory('lib/src/native');
+    print('Warning: using $targetDir instead');
+  }
 
   try {
     // Perform the copy operation

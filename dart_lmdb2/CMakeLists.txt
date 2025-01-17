@@ -37,6 +37,13 @@ if(IOS)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 endif()
 
+# Neue Option für beide Bibliothekstypen
+if(NOT IOS)
+    # Baue sowohl statische als auch dynamische Libs
+    option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+    option(BUILD_STATIC_LIBS "Build static libraries" ON)
+endif()
+
 # Set output directories explicitly for all configurations
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
@@ -57,7 +64,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Platform specific settings
-
 if(ANDROID)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
     add_definitions(-DANDROID)
@@ -75,43 +81,84 @@ elseif(UNIX)
     set(CMAKE_INSTALL_RPATH "$ORIGIN")
 endif()
 
-# Add LMDB library
+# Add LMDB libraries
 if(IOS)
+    # iOS bleibt unverändert - nur statische Library
     add_library(lmdb STATIC
-        src/mdb.c
-        src/midl.c
+            src/mdb.c
+            src/midl.c
     )
 else()
+    # Dynamische Library
     add_library(lmdb SHARED
-        src/mdb.c
-        src/midl.c
+            src/mdb.c
+            src/midl.c
+    )
+
+    # Zusätzliche statische Library
+    add_library(lmdb_static STATIC
+            src/mdb.c
+            src/midl.c
+    )
+
+    # Setze gleichen Output-Namen für statische Library
+    set_target_properties(lmdb_static PROPERTIES
+            OUTPUT_NAME "lmdb"
+            PREFIX "lib"
     )
 endif()
 
-target_include_directories(lmdb PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/include
-)
+# Set include directories for all targets
+if(IOS)
+    target_include_directories(lmdb PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+    )
+else()
+    target_include_directories(lmdb PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+    )
+    target_include_directories(lmdb_static PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+    )
+endif()
 
 # Set library properties
-set_target_properties(lmdb PROPERTIES
-    VERSION 0.9.70
-    SOVERSION 0
-    PUBLIC_HEADER "src/include/lmdb.h;src/include/midl.h"
-)
+if(IOS)
+    set_target_properties(lmdb PROPERTIES
+            PUBLIC_HEADER "src/include/lmdb.h;src/include/midl.h"
+    )
+else()
+    set_target_properties(lmdb PROPERTIES
+            VERSION 0.9.70
+            SOVERSION 0
+            PUBLIC_HEADER "src/include/lmdb.h;src/include/midl.h"
+    )
 
-if (ANDROID)
+    set_target_properties(lmdb_static PROPERTIES
+            PUBLIC_HEADER "src/include/lmdb.h;src/include/midl.h"
+    )
+endif()
+
+if(ANDROID)
     # Support Android 15 16k page size
     target_link_options(lmdb PRIVATE "-Wl,-z,max-page-size=16384")
+    if(NOT IOS)
+        target_link_options(lmdb_static PRIVATE "-Wl,-z,max-page-size=16384")
+    endif()
 endif()
 
 if(WIN32)
     set_target_properties(lmdb PROPERTIES
-        PREFIX ""
-        OUTPUT_NAME "lmdb"
-        WINDOWS_EXPORT_ALL_SYMBOLS ON
+            PREFIX ""
+            OUTPUT_NAME "lmdb"
+            WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+    set_target_properties(lmdb_static PROPERTIES
+            PREFIX ""
+            OUTPUT_NAME "lmdb_static"
+            WINDOWS_EXPORT_ALL_SYMBOLS ON
     )
 endif()
-
 
 if(IOS)
     # Disable BITCODE as it's deprecated
@@ -125,8 +172,16 @@ endif()
 # Installation rules
 if(NOT IOS)
     include(GNUInstallDirs)
+    install(TARGETS lmdb lmdb_static
+            RUNTIME DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+            LIBRARY DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+            ARCHIVE DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+            PUBLIC_HEADER DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/include
+    )
+else()
+    include(GNUInstallDirs)
     install(TARGETS lmdb
-        LIBRARY DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-        PUBLIC_HEADER DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/include
+            LIBRARY DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+            PUBLIC_HEADER DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/include
     )
 endif()
