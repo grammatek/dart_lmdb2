@@ -2,6 +2,7 @@ import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_lmdb2/lmdb.dart';
+import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() {
@@ -34,6 +35,9 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   String _status = 'Initializing...';
   late LMDB _db;
+  var logger = Logger(
+    printer: SimplePrinter(colors: true, printTime: true),
+  );
 
   @override
   void initState() {
@@ -43,21 +47,20 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _initDatabase() async {
     try {
-      print('Starting database initialization...');
+      logger.d('Starting database initialization...');
 
-      // Get application documents directory
       final appDir = await getApplicationDocumentsDirectory();
       final dbPath = '${appDir.path}/lmdb_test';
-      print('Using database path: $dbPath');
+      logger.d('Using database path: $dbPath');
 
       // Ensure directory exists
       final dbDir = Directory(dbPath);
       if (!dbDir.existsSync()) {
         try {
           dbDir.createSync(recursive: true);
-          print('Created database directory: $dbPath');
+          logger.d('Created database directory: $dbPath');
         } catch (e) {
-          print('Failed to create directory: $e');
+          logger.e('Failed to create directory: $e');
           setState(() {
             _status = 'Failed to create database directory: $e';
           });
@@ -66,29 +69,23 @@ class _MyHomePageState extends State<MyHomePage> {
       }
 
       // Check directory permissions
-      try {
-        final file = File('$dbPath/test.txt');
-        await file.writeAsString('test');
-        await file.delete();
-        print('Directory permissions verified');
-      } catch (e) {
-        print('Directory permission test failed: $e');
-        setState(() {
-          _status = 'No write permission in database directory: $e';
-        });
-        return;
-      }
+      await checkDirectoryPermissions(dbPath);
 
       // Initialize database
       _db = LMDB();
-      print('Created LMDB instance');
+      logger.d('Created LMDB instance');
 
       try {
+        var flags = LMDBFlagSet();
+        if (Platform.isMacOS) {
+          // Sandbox restrictions apply
+          flags.add(MDB_NOLOCK);
+        }
         await _db.init(dbPath,
-            config: LMDBInitConfig(mapSize: 10 * 1024 * 1024)); // 10MB
-        print('Database initialized successfully');
+            config: LMDBInitConfig(mapSize: 10 * 1024 * 1024), flags: flags);
+        logger.d('Database initialized successfully');
       } catch (e) {
-        print('Database initialization failed: $e');
+        logger.e('Database initialization failed: $e');
         setState(() {
           _status = 'Database initialization failed: $e';
         });
@@ -99,9 +96,9 @@ class _MyHomePageState extends State<MyHomePage> {
       late final Pointer<MDB_txn> txn;
       try {
         txn = await _db.txnStart();
-        print('Transaction started');
+        logger.d('Transaction started');
       } catch (e) {
-        print('Failed to start transaction: $e');
+        logger.e('Failed to start transaction: $e');
         setState(() {
           _status = 'Failed to start transaction: $e';
         });
@@ -110,15 +107,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
       try {
         await _db.putUtf8(txn, 'greeting', 'Hello from LMDB!');
-        print('Data written');
+        logger.d('Data written');
         await _db.txnCommit(txn);
-        print('Transaction committed');
+        logger.d('Transaction committed');
       } catch (e) {
-        print('Write operation failed: $e');
+        logger.e('Write operation failed: $e');
         try {
           await _db.txnAbort(txn);
         } catch (abortError) {
-          print('Additionally, transaction abort failed: $abortError');
+          logger.e('Additionally, transaction abort failed: $abortError');
         }
         setState(() {
           _status = 'Write operation failed: $e';
@@ -131,7 +128,7 @@ class _MyHomePageState extends State<MyHomePage> {
       try {
         readTxn = await _db.txnStart();
       } catch (e) {
-        print('Failed to start read transaction: $e');
+        logger.e('Failed to start read transaction: $e');
         setState(() {
           _status = 'Failed to start read transaction: $e';
         });
@@ -140,27 +137,41 @@ class _MyHomePageState extends State<MyHomePage> {
 
       try {
         final value = await _db.getUtf8(readTxn, 'greeting');
-        print('Data read: $value');
+        logger.d('Data read: $value');
         await _db.txnCommit(readTxn);
 
         setState(() {
           _status = 'DB Test successful!\nRead value: $value';
         });
       } catch (e) {
-        print('Read operation failed: $e');
+        logger.e('Read operation failed: $e');
         try {
           await _db.txnAbort(readTxn);
         } catch (abortError) {
-          print('Additionally, read transaction abort failed: $abortError');
+          logger.e('Additionally, read transaction abort failed: $abortError');
         }
         setState(() {
           _status = 'Read operation failed: $e';
         });
       }
     } catch (e) {
-      print('Unexpected error during database operations: $e');
+      logger.e('Unexpected error during database operations: $e');
       setState(() {
         _status = 'Unexpected error: $e';
+      });
+    }
+  }
+
+  Future<void> checkDirectoryPermissions(String dbPath) async {
+    try {
+      final file = File('$dbPath/test.txt');
+      await file.writeAsString('test');
+      await file.delete();
+      logger.d('Directory permissions verified');
+    } catch (e) {
+      logger.e('Directory permission test failed: $e');
+      setState(() {
+        _status = 'No write permission in database directory: $e';
       });
     }
   }
@@ -199,9 +210,9 @@ class _MyHomePageState extends State<MyHomePage> {
   void dispose() {
     try {
       _db.close();
-      print('Database closed successfully');
+      logger.d('Database closed successfully');
     } catch (e) {
-      print('Error closing database: $e');
+      logger.e('Error closing database: $e');
     }
     super.dispose();
   }
