@@ -1,8 +1,7 @@
 ## 0.9.1
 
-* Documentation updates
 * Revamp fetching logic of native libs
-* All supported platforms are built on GitHub CI
+* Documentation updates
 
 ## 0.9.0
 
