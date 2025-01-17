@@ -24,9 +24,21 @@ class LMDBNative {
       return DynamicLibrary.process();
     }
 
-    final libraryPath =
-        Platform.isAndroid ? "liblmdb.so" : _resolveLibraryPath();
-    return DynamicLibrary.open(libraryPath);
+    if (Platform.isAndroid) {
+      return DynamicLibrary.open("liblmdb.so");
+    }
+
+    if (Platform.isMacOS) {
+      try {
+        // first try: this is for flutter environments
+        return DynamicLibrary.open('liblmdb.dylib');
+      } catch (e) {
+        // ignoring
+      }
+    }
+
+    // default dart_lmdb2 loading for non-Flutter platforms
+    return DynamicLibrary.open(_resolveLibraryPath());
   }
 
   String _getAndroidAbi() {

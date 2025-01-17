@@ -1,3 +1,8 @@
+## 0.9.5
+
+* Adapt loading of shared library on MacOS to support Dart-only and Flutter equally
+* Use also `-DMDB_USE_POSIX_SEM` on MacOS
+
 ## 0.9.4
 
 * Compile iOS static library with `-DMDB_USE_POSIX_SEM`, otherwise it uses SYS-V semaphores,

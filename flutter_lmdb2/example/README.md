@@ -37,7 +37,13 @@ TODO
 
 ### MacOS
 
-TODO
+Fetch all prerequisites:
+
+```bash
+cd macos/
+pod install
+cd ..
+```
 
 ### Windows
 
@@ -50,7 +56,7 @@ After you have followed the prerequisite steps, run the app normally via:
 ```bash
 flutter run
 ```
-an choose an appropriate target device.
+and choose an appropriate target device.
 
 ## Getting Started with development
 
@@ -64,3 +70,21 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the [online documentation](https://docs.flutter.dev/), which offers tutorials, samples, guidance on mobile development, and a full API reference.
 
 For getting started with flutter_lmdb2, browse the documentation of [dart_lmdb2](https://pub.dev/packages/dart_lmdb2), which provides all the APIs.
+
+## Note
+
+- For MacOS sandbox restrictions apply and you might not be able to initialize the database with locking in the applications document path. Therefore use something like the following code:
+
+```dart
+late LMDB db;
+final appDir = await getApplicationDocumentsDirectory();
+final dbPath = '${appDir.path}/lmdb_test';
+
+var flags = LMDBFlagSet();
+if (Platform.isMacOS) {
+  // Sandbox restrictions apply
+  flags.add(MDB_NOLOCK);
+}
+await db.init(dbPath,
+    config: LMDBInitConfig(mapSize: 10 * 1024 * 1024), flags: flags);
+```

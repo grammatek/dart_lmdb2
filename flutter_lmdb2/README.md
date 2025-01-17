@@ -33,7 +33,7 @@ This step should be done every time you fetch a new version of `dart_lmdb2`.
 For a complete working example, check out the Flutter app in the [example/](example/README.md) subdirectory.
 
 ## Documentation
-For detailed API documentation, please refer to [dart_lmdb2 project](https://pub.dev/packages/dart_lmbd2).
+For detailed API documentation, please refer to [dart_lmdb2 project](https://pub.dev/documentation/dart_lmdb2/latest/).
 
 ## License
 MIT, see [LICENSE](LICENSE)
