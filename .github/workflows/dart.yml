@@ -123,6 +123,9 @@ jobs:
         run: |
           flutter config --no-analytics --no-cli-animations
           flutter pub get
+          cd example || exit 1
+          flutter pub get
+          cd ..
           dart run flutter_lmdb2:fetch_native
       - name: iOS Setup
         if: matrix.os == 'macos-latest'
@@ -137,6 +140,8 @@ jobs:
           pod repo update
           pod install --verbose
           cd ..
+          flutter pub get
+          dart run flutter_lmdb2:fetch_native
           flutter build ios --no-codesign
 
       - name: Build and Validate MacOS Plugin
@@ -146,6 +151,8 @@ jobs:
           pod repo update
           pod install --verbose
           cd ..
+          flutter pub get
+          dart run flutter_lmdb2:fetch_native
           flutter build macos --no-codesign
 
       - name: Android Setup
