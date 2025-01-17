@@ -45,17 +45,34 @@ Pod::Spec.new do |s|
        echo "Plugin Root: $PLUGIN_ROOT"
 
        SOURCE_DIR="${PLUGIN_ROOT}/lib/src/native/macos"
-       APP_FRAMEWORKS="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
+       APP_FRAMEWORKS="${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
 
        echo "Source directory: ${SOURCE_DIR}"
        echo "APP_FRAMEWORKS directory: ${APP_FRAMEWORKS}"
 
+       # Create Frameworks directory if it doesn't exist
+       mkdir -p "${APP_FRAMEWORKS}"
+
        if [ -d "${SOURCE_DIR}" ]; then
          echo "Copying native libraries..."
-         cp -R "${SOURCE_DIR}"/* "${APP_FRAMEWORKS}/"
-         install_name_tool -id "@rpath/liblmdb.dylib" "${APP_FRAMEWORKS}/liblmdb.dylib"
+         cp -R "${SOURCE_DIR}/liblmdb.dylib" "${APP_FRAMEWORKS}/"
+         if [ $? -eq 0 ]; then
+           echo "Successfully copied liblmdb.dylib"
+           install_name_tool -id "@rpath/liblmdb.dylib" "${APP_FRAMEWORKS}/liblmdb.dylib"
+           if [ $? -eq 0 ]; then
+             echo "Successfully updated install name"
+             # Verify the changes
+             otool -L "${APP_FRAMEWORKS}/liblmdb.dylib"
+           else
+             echo "Failed to update install name"
+             exit 1
+           fi
+         else
+           echo "Failed to copy liblmdb.dylib"
+           exit 1
+         fi
        else
-         echo "Warning: Source directory not found"
+         echo "Warning: Source directory not found: ${SOURCE_DIR}"
          exit 1
        fi
      SCRIPT
