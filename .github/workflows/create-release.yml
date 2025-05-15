@@ -59,7 +59,7 @@ jobs:
           ref: ${{ needs.check_for_tag_and_success.outputs.tag_name }}
 
       - name: Download artifacts from successful workflow
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow: dart.yml
           workflow_conclusion: success
