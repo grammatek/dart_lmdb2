@@ -1,0 +1,12 @@
+name: lmdb2_tools
+description: Release tools for dart_lmdb2 and flutter_lmdb2
+version: 1.0.0
+
+environment:
+  sdk: '>=2.19.0 <4.0.0'
+
+dependencies:
+  http: ^1.0.0
+  yaml: ^3.1.0
+  path: ^1.8.0
+  archive: ^3.3.0

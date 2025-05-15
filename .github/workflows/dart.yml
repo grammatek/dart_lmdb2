@@ -2,7 +2,11 @@ name: LMDB2
 
 on:
   push:
-    branches: [ "master" ]
+    tags:
+      - 'dart_lmdb2_v*'
+      - 'flutter_lmdb2_v*'
+      - 'dart_lmdb2_test_*'
+      - 'flutter_lmdb2_test_*'
   pull_request:
     branches: [ "master" ]
 
@@ -39,7 +43,7 @@ jobs:
 
       - name: Set NDK path
         if: matrix.build-android
-        run: echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+        run: echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
 
       - name: Install CMake and build tools
         run: ${{ matrix.cmake-install }}
@@ -93,7 +97,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-lib-ios
-          path: dart_lmdb2/lib/src/native/ios/
+          path: |
+            dart_lmdb2/lib/src/native/ios/
+            dart_lmdb2/lib/src/native/ios/device/
+            dart_lmdb2/lib/src/native/ios/simulator/
 
   build_test_flutter_lmdb2:
     strategy:
@@ -110,7 +117,7 @@ jobs:
         with:
           flutter-version: ${{ matrix.flutter }}
           channel: 'stable'
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.pub-cache
@@ -173,7 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all platform libraries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: collected_artifacts
         continue-on-error: true
@@ -186,41 +193,27 @@ jobs:
       - name: Prepare final artifact structure
         run: |
           mkdir -p final_artifacts/lib/src/native
+          mkdir -p final_artifacts/lib/src/native/ios/device
+          mkdir -p final_artifacts/lib/src/native/ios/simulator
           # Copy platform specific files
           cp -r collected_artifacts/native-lib-*/macos final_artifacts/lib/src/native/ || true
           cp -r collected_artifacts/native-lib-*/windows final_artifacts/lib/src/native/ || true
           cp -r collected_artifacts/native-lib-*/linux final_artifacts/lib/src/native/ || true
           cp -r collected_artifacts/native-lib-android/* final_artifacts/lib/src/native/android/ || true
-          cp -r collected_artifacts/native-lib-ios/* final_artifacts/lib/src/native/ios/ || true
+
+          # Copy iOS files
+          if [ -d "collected_artifacts/native-lib-ios" ]; then
+            mkdir -p final_artifacts/lib/src/native/ios/device
+            mkdir -p final_artifacts/lib/src/native/ios/simulator
+            cp collected_artifacts/native-lib-ios/device/liblmdb.a final_artifacts/lib/src/native/ios/device/ || true
+            cp collected_artifacts/native-lib-ios/simulator/liblmdb.a final_artifacts/lib/src/native/ios/simulator/ || true
+          fi
 
       - name: Upload final artifacts
         uses: actions/upload-artifact@v4
         with:
           name: all-native-libraries
           path: final_artifacts/lib/src/native
-
-  publish_dart_lmdb2:
-    needs: build_test_dart_lmdb2
-    if: github.event_name == 'release' && github.event.action == 'created'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./dart_lmdb2
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
-
-      - name: Download all native libraries
-        uses: actions/download-artifact@v3
-        with:
-          path: lib/src/native/
-
-      # Optional: Publish to pub.dev
-      - name: Publish to pub.dev
-        run: dart pub publish --force
-        env:
-          PUB_CREDENTIALS: ${{ secrets.PUB_CREDENTIALS }}
 
   docs_dart_lmdb2:
     needs: build_test_dart_lmdb2
@@ -239,3 +232,98 @@ jobs:
 
       - name: Generate documentation
         run: dart doc
+
+  create_release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [collect_artifacts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract tag info
+        id: tag_info
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          if [[ "$TAG_NAME" == dart_lmdb2_v* ]]; then
+            {
+              echo "package_name=dart_lmdb2"
+              echo "package_version=${TAG_NAME#dart_lmdb2_v}"
+              echo "is_test_release=false"
+            } >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG_NAME" == flutter_lmdb2_v* ]]; then
+            {
+              echo "package_name=flutter_lmdb2"
+              echo "package_version=${TAG_NAME#flutter_lmdb2_v}"
+              echo "is_test_release=false"
+            } >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG_NAME" == dart_lmdb2_test_* ]]; then
+            {
+              echo "package_name=dart_lmdb2"
+              echo "package_version=test-${TAG_NAME#dart_lmdb2_test_}"
+              echo "is_test_release=true"
+            } >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG_NAME" == flutter_lmdb2_test_* ]]; then
+            {
+              echo "package_name=flutter_lmdb2"
+              echo "package_version=test-${TAG_NAME#flutter_lmdb2_test_}"
+              echo "is_test_release=true"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: all-native-libraries
+          path: native_libs
+
+      - name: Prepare release archive
+        run: |
+          PACKAGE_NAME="${{ steps.tag_info.outputs.package_name }}"
+          PACKAGE_VERSION="${{ steps.tag_info.outputs.package_version }}"
+          IS_TEST="${{ steps.tag_info.outputs.is_test_release }}"
+
+          # Create README in the native_libs directory
+          if [[ "$IS_TEST" == "true" ]]; then
+            cat > native_libs/README.md << EOF
+          # TEST RELEASE: Native Libraries for $PACKAGE_NAME ($PACKAGE_VERSION)
+
+          This is a TEST release and should not be used in production.
+
+          This archive contains the prebuilt native libraries for $PACKAGE_NAME package.
+
+          The archive contains libraries for all supported platforms:
+          - Android (arm64-v8a, x86_64)
+          - iOS (device arm64, simulator x86_64 + arm64)
+          - Linux (x86_64)
+          - macOS (universal binary with arm64 + x86_64)
+          - Windows (x86_64)
+          EOF
+          else
+            cat > native_libs/README.md << EOF
+          # Native Libraries for $PACKAGE_NAME v$PACKAGE_VERSION
+
+          This archive contains the prebuilt native libraries for $PACKAGE_NAME package.
+
+          The archive contains libraries for all supported platforms:
+          - Android (arm64-v8a, x86_64)
+          - iOS (device arm64, simulator x86_64 + arm64)
+          - Linux (x86_64)
+          - macOS (universal binary with arm64 + x86_64)
+          - Windows (x86_64)
+          EOF
+          fi
+
+          # Create archive with all libraries
+          tar -czf $PACKAGE_NAME-$PACKAGE_VERSION-native-libs.tar.gz -C native_libs .
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "${{ steps.tag_info.outputs.is_test_release == 'true' && format('TEST: {0} - {1}', steps.tag_info.outputs.package_name, steps.tag_info.outputs.package_version) || format('{0} v{1}', steps.tag_info.outputs.package_name, steps.tag_info.outputs.package_version) }}"
+          files: "${{ steps.tag_info.outputs.package_name }}-${{ steps.tag_info.outputs.package_version }}-native-libs.tar.gz"
+          draft: false
+          prerelease: ${{ steps.tag_info.outputs.is_test_release == 'true' }}
+          generate_release_notes: true
