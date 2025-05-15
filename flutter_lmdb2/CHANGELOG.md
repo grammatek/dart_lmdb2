@@ -1,3 +1,7 @@
+## 0.9.3
+
+* Updated dependency to dart_lmdb2 0.9.8
+
 ## 0.9.2
 
 * Revamp Mac OS build: also use static library for Flutter plugin
