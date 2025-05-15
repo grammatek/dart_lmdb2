@@ -62,14 +62,39 @@ Future<void> main(List<String> args) async {
   String tagName = arguments['tag'] ?? '${packageName}_v$packageVersion';
   print('Using tag: $tagName');
 
+  // Determine version string for tarball filename
+  String versionString = packageVersion;
+  if (tagName.contains('_test_')) {
+    // For test releases, extract version from tag
+    versionString = tagName.replaceFirst('${packageName}_test_', 'test-');
+  }
+
+  // Create release build directory
+  final releaseDirName = 'release_${packageName}_$versionString';
+  final releaseDirPath = path.join(repoDir, releaseDirName);
+  final releaseDir = Directory(releaseDirPath);
+  
+  // Clean up old release directory if it exists
+  if (releaseDir.existsSync()) {
+    print('Cleaning up existing release directory: $releaseDirPath');
+    releaseDir.deleteSync(recursive: true);
+  }
+  releaseDir.createSync();
+  print('Created release directory: $releaseDirPath');
+
+  // Copy package to release directory
+  final releasePackageDir = path.join(releaseDirPath, packageName);
+  await copyDirectory(Directory(packageDir), Directory(releasePackageDir));
+  print('Copied package to release directory');
+
   // Download release tarball
-  final tarballFileName = '$packageName-$packageVersion-native-libs.tar.gz';
-  final tarballPath = path.join(repoDir, tarballFileName);
+  final tarballFileName = '$packageName-$versionString-native-libs.tar.gz';
+  final tarballPath = path.join(releaseDirPath, tarballFileName);
   final tarballFile = File(tarballPath);
 
   try {
     await downloadReleaseTarball(
-        packageName, packageVersion, tagName, tarballPath);
+        packageName, versionString, tagName, tarballPath);
     print('Downloaded $tarballFileName');
   } catch (e) {
     print('Error downloading tarball: $e');
@@ -78,17 +103,18 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 
-  // Extract tarball to package directory
+  // Extract tarball to native directory in release folder
+  final nativePath = path.join(releasePackageDir, 'lib', 'src', 'native');
   try {
-    await extractTarball(tarballPath, packageDir);
-    print('Extracted native libraries to $packageDir');
+    await extractTarball(tarballPath, nativePath);
+    print('Extracted native libraries to $nativePath');
   } catch (e) {
     print('Error extracting tarball: $e');
     exit(1);
   }
 
   // Verify native libraries were extracted correctly
-  final nativeDir = Directory(path.join(packageDir, 'lib', 'src', 'native'));
+  final nativeDir = Directory(nativePath);
   if (!nativeDir.existsSync()) {
     print('Error: Native directory not found after extraction');
     exit(1);
@@ -105,15 +131,28 @@ Future<void> main(List<String> args) async {
 
   // Publish to pub.dev
   if (arguments['no-pub'] != true) {
-    print('\nPublishing $packageName to pub.dev...');
+    final isDryRun = arguments['dry-run'] == true;
+    
+    if (isDryRun) {
+      print('\nRunning dry-run to check if $packageName can be published...');
+    } else {
+      print('\nPublishing $packageName to pub.dev...');
+    }
+
+    final publishArgs = ['pub', 'publish'];
+    if (isDryRun) {
+      publishArgs.add('--dry-run');
+    } else {
+      publishArgs.add('--force');
+    }
 
     Process process;
     if (packageName == 'flutter_lmdb2') {
-      process = await Process.start('flutter', ['pub', 'publish', '--force'],
-          workingDirectory: packageDir);
+      process = await Process.start('flutter', publishArgs,
+          workingDirectory: releasePackageDir);
     } else {
-      process = await Process.start('dart', ['pub', 'publish', '--force'],
-          workingDirectory: packageDir);
+      process = await Process.start('dart', publishArgs,
+          workingDirectory: releasePackageDir);
     }
 
     // Forward output to console
@@ -127,17 +166,25 @@ Future<void> main(List<String> args) async {
       exit(exitCode);
     }
 
-    print('Successfully published $packageName v$packageVersion to pub.dev!');
+    if (isDryRun) {
+      print('\nDry-run completed successfully!');
+      print('$packageName v$packageVersion is ready to be published.');
+      print('To publish for real, run without --dry-run flag');
+    } else {
+      print('Successfully published $packageName v$packageVersion to pub.dev!');
+    }
   } else {
     print('\nSkipping pub.dev publishing (--no-pub flag used)');
     print('Native libraries are ready for manual publishing:');
-    print('  cd $packageDir');
+    print('  cd $releasePackageDir');
     if (packageName == 'flutter_lmdb2') {
       print('  flutter pub publish');
     } else {
       print('  dart pub publish');
     }
   }
+  
+  print('\nRelease build directory: $releaseDirPath');
 }
 
 /// Parse command line arguments
@@ -149,6 +196,8 @@ Map<String, dynamic> parseArgs(List<String> args) {
       result['help'] = true;
     } else if (arg == '--no-pub') {
       result['no-pub'] = true;
+    } else if (arg == '--dry-run') {
+      result['dry-run'] = true;
     } else if (arg.startsWith('--package=')) {
       result['package'] = arg.substring('--package='.length);
     } else if (arg.startsWith('--tag=')) {
@@ -172,6 +221,8 @@ void printUsage() {
       '  --tag=<tag>       Specific tag to use (defaults to latest matching tag)');
   print(
       '  --no-pub          Skip publishing to pub.dev (extract libraries only)');
+  print(
+      '  --dry-run         Run pub publish with --dry-run to check if package would be accepted');
   print('  --help            Show this help message');
 }
 
@@ -265,6 +316,23 @@ Future<void> listDirectory(Directory dir, {String indent = ''}) async {
       await listDirectory(entity, indent: '$indent  ');
     } else {
       print('$indent$name');
+    }
+  }
+}
+
+/// Copy directory recursively
+Future<void> copyDirectory(Directory source, Directory destination) async {
+  if (!destination.existsSync()) {
+    destination.createSync(recursive: true);
+  }
+
+  await for (final entity in source.list(recursive: false)) {
+    if (entity is Directory) {
+      final newDirectory = Directory(path.join(destination.path, path.basename(entity.path)));
+      await copyDirectory(entity, newDirectory);
+    } else if (entity is File) {
+      final newFile = File(path.join(destination.path, path.basename(entity.path)));
+      await entity.copy(newFile.path);
     }
   }
 }
