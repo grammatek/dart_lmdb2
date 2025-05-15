@@ -18,6 +18,10 @@ dev_dependencies:
   lints: ^5.0.0
   test: ^1.17.0
   pana:
+  # For release tool
+  http: ^1.2.0
+  yaml: ^3.1.2
+  archive: ^3.4.9
 
 ffigen:
   output: 'lib/src/generated_bindings.dart'

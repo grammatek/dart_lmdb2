@@ -93,7 +93,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-lib-ios
-          path: dart_lmdb2/lib/src/native/ios/
+          path: |
+            dart_lmdb2/lib/src/native/ios/
+            dart_lmdb2/lib/src/native/ios/device/
+            dart_lmdb2/lib/src/native/ios/simulator/
 
   build_test_flutter_lmdb2:
     strategy:
@@ -173,7 +176,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all platform libraries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: collected_artifacts
         continue-on-error: true
@@ -186,41 +189,27 @@ jobs:
       - name: Prepare final artifact structure
         run: |
           mkdir -p final_artifacts/lib/src/native
+          mkdir -p final_artifacts/lib/src/native/ios/device
+          mkdir -p final_artifacts/lib/src/native/ios/simulator
           # Copy platform specific files
           cp -r collected_artifacts/native-lib-*/macos final_artifacts/lib/src/native/ || true
           cp -r collected_artifacts/native-lib-*/windows final_artifacts/lib/src/native/ || true
           cp -r collected_artifacts/native-lib-*/linux final_artifacts/lib/src/native/ || true
           cp -r collected_artifacts/native-lib-android/* final_artifacts/lib/src/native/android/ || true
-          cp -r collected_artifacts/native-lib-ios/* final_artifacts/lib/src/native/ios/ || true
+
+          # Copy iOS files
+          if [ -d "collected_artifacts/native-lib-ios" ]; then
+            mkdir -p final_artifacts/lib/src/native/ios/device
+            mkdir -p final_artifacts/lib/src/native/ios/simulator
+            cp collected_artifacts/native-lib-ios/device/liblmdb.a final_artifacts/lib/src/native/ios/device/ || true
+            cp collected_artifacts/native-lib-ios/simulator/liblmdb.a final_artifacts/lib/src/native/ios/simulator/ || true
+          fi
 
       - name: Upload final artifacts
         uses: actions/upload-artifact@v4
         with:
           name: all-native-libraries
           path: final_artifacts/lib/src/native
-
-  publish_dart_lmdb2:
-    needs: build_test_dart_lmdb2
-    if: github.event_name == 'release' && github.event.action == 'created'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./dart_lmdb2
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
-
-      - name: Download all native libraries
-        uses: actions/download-artifact@v3
-        with:
-          path: lib/src/native/
-
-      # Optional: Publish to pub.dev
-      - name: Publish to pub.dev
-        run: dart pub publish --force
-        env:
-          PUB_CREDENTIALS: ${{ secrets.PUB_CREDENTIALS }}
 
   docs_dart_lmdb2:
     needs: build_test_dart_lmdb2
