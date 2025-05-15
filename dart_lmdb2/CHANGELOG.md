@@ -1,6 +1,12 @@
+## 0.9.8
+
+* iOS: Added support for iOS simulators with architecture-specific builds
+* iOS: Created universal simulator library with both x86_64 and arm64 architectures
+* iOS: Reorganized libraries into separate device and simulator directories
+
 ## 0.9.7
 
-* MacOs: Check at runtime, if we need to dynamically link lmdb or if we are already statically 
+* MacOs: Check at runtime, if we need to dynamically link lmdb or if we are already statically
          linked.
 
 ## 0.9.6

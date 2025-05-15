@@ -1,2 +1,11 @@
 .DS_Store
 .dart_tool/
+# Ignore all native binary files
+*.a
+*.so
+*.dylib
+*.dll
+*.lib
+
+# Keep directory structure with .gitkeep files
+!**/.gitkeep

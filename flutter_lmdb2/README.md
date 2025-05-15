@@ -15,7 +15,7 @@ Flutter bindings for LMDB (Lightning Memory-Mapped Database).  This package is a
 ## Installation
 ```yaml
 dependencies:
-  flutter_lmdb2: ^0.9.1
+  flutter_lmdb2: ^0.9.3
 ```
 
 ## Additional Setup Steps
@@ -27,6 +27,17 @@ dart run flutter_lmdb2:fetch_native
 ```
 
 **This step should be done every time you fetch a new version of `dart_lmdb2`.**
+
+### iOS Architecture Support
+
+For iOS development, the package provides separate libraries for:
+- Physical iOS devices (arm64)
+- iOS simulators (x86_64)
+
+These are automatically selected based on your build target, ensuring compatibility with both:
+- Simulators on Intel Macs
+- Simulators on Apple Silicon Macs (M1/M2/M3/M4)
+- Physical iOS devices
 
 ## Example
 
