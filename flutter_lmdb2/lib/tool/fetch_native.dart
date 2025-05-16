@@ -1,98 +1,12 @@
-import 'dart:io';
-import 'dart:isolate';
-import 'package:path/path.dart' as path;
+import 'package:dart_lmdb2/lmdb.dart' as dart_lmdb2;
 
-/// Resolves the base path to the package
-/// Returns null if package cannot be found
-Directory? resolvePackageBase(String packageName) {
-  final normalizedName =
-      packageName.endsWith('/') ? packageName : '$packageName/';
-  final packageUri = Uri.parse('package:$normalizedName');
-  final Uri? resolvedUri = Isolate.resolvePackageUriSync(packageUri);
-
-  if (resolvedUri == null) {
-    print('Error: Could not resolve package "$packageName"');
-    return null;
-  }
-
-  return Directory.fromUri(resolvedUri);
-}
-
-/// Resolves the full path to the native directory within the package
-/// Returns null if either package or directory cannot be resolved
-Directory? resolveNativeDir(String packageName) {
-  final packageDir = resolvePackageBase(packageName);
-  if (packageDir == null) return null;
-
-  final nativePath = path.join(packageDir.path, 'src', 'native');
-  return Directory(nativePath);
-}
-
-/// Checks if source file needs to be copied based on modification time
-/// Returns true if target doesn't exist or source is newer
-Future<bool> shouldCopyFile(File source, String targetPath) async {
-  final targetFile = File(targetPath);
-
-  if (!await targetFile.exists()) {
-    return true;
-  }
-
-  final sourceModified = await source.lastModified();
-  final targetModified = await targetFile.lastModified();
-
-  return sourceModified.isAfter(targetModified);
-}
-
-/// Copies all files and directories recursively from source to destination
-/// Only copies files that are newer or don't exist in target
-Future<void> copyDirectory(Directory source, Directory destination) async {
-  if (!await destination.exists()) {
-    await destination.create(recursive: true);
-  }
-
-  await for (final entity in source.list(recursive: false)) {
-    final entityName = path.basename(entity.path);
-    final destPath = path.join(destination.path, entityName);
-
-    if (entity is Directory) {
-      final newDir = Directory(destPath);
-      await copyDirectory(entity, newDir);
-    } else if (entity is File) {
-      if (await shouldCopyFile(entity, destPath)) {
-        await entity.copy(destPath);
-        print('$entityName');
-      } else {
-        print('$entityName skipped (not modified)');
-      }
-    }
-  }
-}
-
+/// Downloads native libraries from dart_lmdb2 GitHub releases
 Future<void> fetchNativeLibs() async {
-  final packageName = 'dart_lmdb2';
-  final destPackageName = 'flutter_lmdb2';
-
-  final sourceDir = resolveNativeDir(packageName);
-  if (sourceDir == null) {
-    print('Error: Could not resolve native directory in package $packageName');
-    exit(1);
-  }
-
-  var targetDir = resolveNativeDir(destPackageName);
-  if (targetDir == null) {
-    print('Warning: Could not resolve package directory of $destPackageName');
-    targetDir = Directory('lib/src/native');
-    print('Warning: using $targetDir instead');
-  }
-
   try {
-    // Perform the copy operation
-    print('Copying native library files');
-    print('  Source: ${sourceDir.path}');
-    print('  Target: ${targetDir.path}');
-    await copyDirectory(sourceDir, targetDir);
+    // Use dart_lmdb2's fetch functionality, targeting flutter_lmdb2's native directory
+    await dart_lmdb2.fetchNativeLibraries(targetDir: 'lib/src/native');
   } catch (e) {
-    print('Error during copy operation: $e');
-    exit(1);
+    print('Error fetching native libraries: $e');
+    rethrow;
   }
 }
