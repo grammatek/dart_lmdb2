@@ -90,10 +90,12 @@ dart run ../tool/release.dart --package=flutter_lmdb2
 
 The script will:
 1. Auto-detect the package version from pubspec.yaml
-2. Download the native libraries tarball from GitHub releases
-3. Extract it to the correct location
-4. Verify the extraction was successful
-5. Publish to pub.dev
+2. Create a clean release build directory (e.g., `release_dart_lmdb2_0.9.8`)
+3. Copy the package to the release directory
+4. Download the native libraries tarball from GitHub releases
+5. Extract libraries to the release directory (preserving your source tree)
+6. Verify the extraction was successful
+7. Publish to pub.dev (unless --no-pub or --dry-run is used)
 
 ### Script Options
 
@@ -101,9 +103,10 @@ The script will:
 Usage: dart run tool/release.dart [options]
 
 Options:
-  --package=<name>  Package to release (dart_lmdb2 or flutter_lmdb2)
+  --package=<name>     Package to release (dart_lmdb2 or flutter_lmdb2)
   --tag=<tag>       Specific tag to use (defaults to latest matching tag)
   --no-pub          Skip publishing to pub.dev (extract libraries only)
+  --dry-run         Run pub publish with --dry-run to check if package would be accepted
   --help            Show this help message
 ```
 
@@ -148,8 +151,24 @@ If you prefer to perform these steps manually:
    flutter pub publish
    ```
 
+## Test Releases
+
+For testing the release process without publishing to pub.dev, you can use test tags:
+
+1. Create a test tag: `dart_lmdb2_test_<identifier>` or `flutter_lmdb2_test_<identifier>`
+2. Push the tag to trigger the workflow
+3. Use the release script with `--no-pub` or `--dry-run`:
+   ```bash
+   # Extract libraries without publishing
+   dart run ../tool/release.dart --package=dart_lmdb2 --tag=dart_lmdb2_test_myfeature --no-pub
+   
+   # Test if package can be published
+   dart run ../tool/release.dart --package=dart_lmdb2 --tag=dart_lmdb2_test_myfeature --dry-run
+   ```
+
 ## Additional Notes
 
+- **Release Build Directory**: The script creates a release directory with the version suffix to keep your source tree clean
 - **Sequential Releases**: If you need to release both packages, always release `dart_lmdb2` first, since `flutter_lmdb2` depends on it.
 
 - **GitHub Actions Access**: The GitHub Actions workflows require permission to:

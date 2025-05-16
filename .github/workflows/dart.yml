@@ -2,7 +2,11 @@ name: LMDB2
 
 on:
   push:
-    branches: [ "master" ]
+    tags:
+      - 'dart_lmdb2_v*'
+      - 'flutter_lmdb2_v*'
+      - 'dart_lmdb2_test_*'
+      - 'flutter_lmdb2_test_*'
   pull_request:
     branches: [ "master" ]
 
@@ -39,7 +43,7 @@ jobs:
 
       - name: Set NDK path
         if: matrix.build-android
-        run: echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+        run: echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
 
       - name: Install CMake and build tools
         run: ${{ matrix.cmake-install }}
@@ -113,7 +117,7 @@ jobs:
         with:
           flutter-version: ${{ matrix.flutter }}
           channel: 'stable'
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.pub-cache
@@ -228,3 +232,98 @@ jobs:
 
       - name: Generate documentation
         run: dart doc
+
+  create_release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [collect_artifacts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract tag info
+        id: tag_info
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          if [[ "$TAG_NAME" == dart_lmdb2_v* ]]; then
+            {
+              echo "package_name=dart_lmdb2"
+              echo "package_version=${TAG_NAME#dart_lmdb2_v}"
+              echo "is_test_release=false"
+            } >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG_NAME" == flutter_lmdb2_v* ]]; then
+            {
+              echo "package_name=flutter_lmdb2"
+              echo "package_version=${TAG_NAME#flutter_lmdb2_v}"
+              echo "is_test_release=false"
+            } >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG_NAME" == dart_lmdb2_test_* ]]; then
+            {
+              echo "package_name=dart_lmdb2"
+              echo "package_version=test-${TAG_NAME#dart_lmdb2_test_}"
+              echo "is_test_release=true"
+            } >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG_NAME" == flutter_lmdb2_test_* ]]; then
+            {
+              echo "package_name=flutter_lmdb2"
+              echo "package_version=test-${TAG_NAME#flutter_lmdb2_test_}"
+              echo "is_test_release=true"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: all-native-libraries
+          path: native_libs
+
+      - name: Prepare release archive
+        run: |
+          PACKAGE_NAME="${{ steps.tag_info.outputs.package_name }}"
+          PACKAGE_VERSION="${{ steps.tag_info.outputs.package_version }}"
+          IS_TEST="${{ steps.tag_info.outputs.is_test_release }}"
+
+          # Create README in the native_libs directory
+          if [[ "$IS_TEST" == "true" ]]; then
+            cat > native_libs/README.md << EOF
+          # TEST RELEASE: Native Libraries for $PACKAGE_NAME ($PACKAGE_VERSION)
+
+          This is a TEST release and should not be used in production.
+
+          This archive contains the prebuilt native libraries for $PACKAGE_NAME package.
+
+          The archive contains libraries for all supported platforms:
+          - Android (arm64-v8a, x86_64)
+          - iOS (device arm64, simulator x86_64 + arm64)
+          - Linux (x86_64)
+          - macOS (universal binary with arm64 + x86_64)
+          - Windows (x86_64)
+          EOF
+          else
+            cat > native_libs/README.md << EOF
+          # Native Libraries for $PACKAGE_NAME v$PACKAGE_VERSION
+
+          This archive contains the prebuilt native libraries for $PACKAGE_NAME package.
+
+          The archive contains libraries for all supported platforms:
+          - Android (arm64-v8a, x86_64)
+          - iOS (device arm64, simulator x86_64 + arm64)
+          - Linux (x86_64)
+          - macOS (universal binary with arm64 + x86_64)
+          - Windows (x86_64)
+          EOF
+          fi
+
+          # Create archive with all libraries
+          tar -czf $PACKAGE_NAME-$PACKAGE_VERSION-native-libs.tar.gz -C native_libs .
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "${{ steps.tag_info.outputs.is_test_release == 'true' && format('TEST: {0} - {1}', steps.tag_info.outputs.package_name, steps.tag_info.outputs.package_version) || format('{0} v{1}', steps.tag_info.outputs.package_name, steps.tag_info.outputs.package_version) }}"
+          files: "${{ steps.tag_info.outputs.package_name }}-${{ steps.tag_info.outputs.package_version }}-native-libs.tar.gz"
+          draft: false
+          prerelease: ${{ steps.tag_info.outputs.is_test_release == 'true' }}
+          generate_release_notes: true
