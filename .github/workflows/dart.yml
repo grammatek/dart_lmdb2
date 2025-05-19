@@ -1,10 +1,5 @@
 name: LMDB2
 
-# TEMPORARY NOTICE: Example app builds are currently disabled
-# during the transition to the new fetch_native implementation.
-# After dart_lmdb2 v0.9.12 and flutter_lmdb2 v0.9.5 are released,
-# the example app builds should be re-enabled.
-
 on:
   push:
     tags:
@@ -162,8 +157,6 @@ jobs:
       - name: Install dependencies
         run: |
           flutter config --no-analytics --no-cli-animations
-           # Skip the build for now
-          exit 0
           flutter pub get
           cd example || exit 1
           flutter pub get
@@ -178,55 +171,59 @@ jobs:
       - name: Build and Validate iOS Plugin
         if: matrix.os == 'macos-latest'
         run: |
-          # TEMPORARILY DISABLED UNTIL NEW RELEASES ARE PUBLISHED
-          echo "iOS example build temporarily disabled during fetch_native transition"
-          echo "This will be re-enabled after dart_lmdb2 v0.9.12 and flutter_lmdb2 v0.9.5 are published"
+          # First, get dependencies
+          cd example || exit 1
+          flutter pub get
 
-          # Skip the build for now
-          exit 0
+          # Download native libraries to flutter_lmdb2
+          echo "Downloading native libraries..."
+          dart run flutter_lmdb2:fetch_native
 
-          # Original build steps (kept for reference)
-          # cd example || exit 1
-          # flutter pub get
-          # dart run flutter_lmdb2:fetch_native
-          # PLUGIN_PATH=$(cd ios/.symlinks/plugins/flutter_lmdb2 2>/dev/null || echo "Plugin not found")
-          # echo "Plugin path: $PLUGIN_PATH"
-          # if [ -d "$PLUGIN_PATH" ]; then
-          #   echo "Checking for iOS libraries:"
-          #   ls -la "$PLUGIN_PATH/lib/src/native/ios/device/" || echo "Device libs not found"
-          #   ls -la "$PLUGIN_PATH/lib/src/native/ios/simulator/" || echo "Simulator libs not found"
-          # fi
-          # cd ios || exit 1
-          # pod repo update
-          # pod install --verbose
-          # cd ..
-          # flutter build ios --no-codesign
+          # Get plugin path and verify libraries exist
+          PLUGIN_PATH=$(cd ios/.symlinks/plugins/flutter_lmdb2 2>/dev/null || echo "Plugin not found")
+          echo "Plugin path: $PLUGIN_PATH"
+          if [ -d "$PLUGIN_PATH" ]; then
+            echo "Checking for iOS libraries:"
+            ls -la "$PLUGIN_PATH/lib/src/native/ios/device/" || echo "Device libs not found"
+            ls -la "$PLUGIN_PATH/lib/src/native/ios/simulator/" || echo "Simulator libs not found"
+          fi
+
+          # Now install pods
+          cd ios || exit 1
+          pod repo update
+          pod install --verbose
+          cd ..
+
+          # Build
+          flutter build ios --no-codesign
 
       - name: Build and Validate MacOS Plugin
         if: matrix.os == 'macos-latest'
         run: |
-          # TEMPORARILY DISABLED UNTIL NEW RELEASES ARE PUBLISHED
-          echo "macOS example build temporarily disabled during fetch_native transition"
-          echo "This will be re-enabled after dart_lmdb2 v0.9.12 and flutter_lmdb2 v0.9.5 are published"
+          # First, get dependencies
+          cd example || exit 1
+          flutter pub get
 
-          # Skip the build for now
-          exit 0
+          # Download native libraries to flutter_lmdb2
+          echo "Downloading native libraries..."
+          dart run flutter_lmdb2:fetch_native
 
-          # Original build steps (kept for reference)
-          # cd example || exit 1
-          # flutter pub get
-          # dart run flutter_lmdb2:fetch_native
-          # PLUGIN_PATH=$(cd macos/.symlinks/plugins/flutter_lmdb2 2>/dev/null || echo "Plugin not found")
-          # echo "Plugin path: $PLUGIN_PATH"
-          # if [ -d "$PLUGIN_PATH" ]; then
-          #   echo "Checking for macOS libraries:"
-          #   ls -la "$PLUGIN_PATH/lib/src/native/macos/" || echo "macOS libs not found"
-          # fi
-          # cd macos || exit 1
-          # pod repo update
-          # pod install --verbose
-          # cd ..
-          # flutter build macos
+          # Get plugin path and verify libraries exist
+          PLUGIN_PATH=$(cd macos/.symlinks/plugins/flutter_lmdb2 2>/dev/null || echo "Plugin not found")
+          echo "Plugin path: $PLUGIN_PATH"
+          if [ -d "$PLUGIN_PATH" ]; then
+            echo "Checking for macOS libraries:"
+            ls -la "$PLUGIN_PATH/lib/src/native/macos/" || echo "macOS libs not found"
+          fi
+
+          # Now install pods
+          cd macos || exit 1
+          pod repo update
+          pod install --verbose
+          cd ..
+
+          # Build
+          flutter build macos
 
       - name: Android Setup
         run: |
@@ -236,25 +233,20 @@ jobs:
 
       - name: Build Android Example
         run: |
-          # TEMPORARILY DISABLED UNTIL NEW RELEASES ARE PUBLISHED
-          echo "Android example build temporarily disabled during fetch_native transition"
-          echo "This will be re-enabled after dart_lmdb2 v0.9.12 and flutter_lmdb2 v0.9.5 are published"
+          cd example
+          flutter pub get
+          dart run flutter_lmdb2:fetch_native
 
-          # Skip the build for now
-          exit 0
+          # Check if libraries were downloaded correctly
+          PLUGIN_PATH=$(cd .dart_tool/pub/bin/flutter_lmdb2 2>/dev/null || echo "Plugin not found")
+          echo "Plugin path: $PLUGIN_PATH"
+          if [ -d "$PLUGIN_PATH" ]; then
+            echo "Checking for Android libraries:"
+            find "$PLUGIN_PATH" -name "*.so" | sort || echo "Android libs not found"
+          fi
 
-          # Original build steps (kept for reference)
-          # cd example
-          # flutter pub get
-          # dart run flutter_lmdb2:fetch_native
-          # PLUGIN_PATH=$(cd .dart_tool/pub/bin/flutter_lmdb2 2>/dev/null || echo "Plugin not found")
-          # echo "Plugin path: $PLUGIN_PATH"
-          # if [ -d "$PLUGIN_PATH" ]; then
-          #   echo "Checking for Android libraries:"
-          #   find "$PLUGIN_PATH" -name "*.so" | sort || echo "Android libs not found"
-          # fi
-          # flutter doctor
-          # flutter build apk --release
+          flutter doctor
+          flutter build apk --release
 
   collect_artifacts:
     if: always()
