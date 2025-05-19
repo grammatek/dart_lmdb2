@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:yaml/yaml.dart';
 import 'package:path/path.dart' as path;
 import 'package:archive/archive.dart';
+import 'package:crypto/crypto.dart';
 
 /// Downloads native libraries from GitHub releases with manifest support
 Future<void> fetchNativeLibraries({String? targetDir}) async {
@@ -30,6 +31,9 @@ Future<void> fetchNativeLibraries({String? targetDir}) async {
 
   // Extract to target directory
   await extractTarball(tarballPath, nativePath);
+
+  // Verify checksums
+  await verifyChecksums(nativePath);
 
   // Clean up
   File(tarballPath).deleteSync();
@@ -152,4 +156,55 @@ Future<void> extractTarball(String tarballPath, String targetDir) async {
   }
 
   print('Extraction complete');
+}
+
+/// Verifies checksums of all extracted files against the manifest
+Future<void> verifyChecksums(String nativePath) async {
+  final manifestFile = File(path.join(nativePath, 'manifest.json'));
+
+  if (!manifestFile.existsSync()) {
+    throw Exception('Manifest file not found after extraction');
+  }
+
+  print('Verifying checksums...');
+  final manifestContent = await manifestFile.readAsString();
+  final manifest = jsonDecode(manifestContent);
+  final platforms = manifest['platforms'] as Map<String, dynamic>;
+
+  for (final entry in platforms.entries) {
+    final platformName = entry.key;
+    final platformData = entry.value as Map<String, dynamic>;
+    final filePath = path.join(nativePath, platformData['path']);
+    final expectedChecksum = platformData['sha256'];
+
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      print('Warning: File not found for $platformName: $filePath');
+      continue;
+    }
+
+    // Calculate checksum
+    final bytes = await file.readAsBytes();
+    final digest = sha256.convert(bytes);
+    final actualChecksum = digest.toString();
+
+    if (actualChecksum != expectedChecksum) {
+      throw Exception(
+          'Checksum mismatch for $platformName: expected $expectedChecksum, got $actualChecksum');
+    }
+  }
+
+  print('All checksums verified successfully');
+}
+
+/// Calculates SHA256 checksum of a file
+Future<String> calculateFileChecksum(String filePath) async {
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    throw Exception('File not found: $filePath');
+  }
+
+  final bytes = await file.readAsBytes();
+  final digest = sha256.convert(bytes);
+  return digest.toString();
 }

@@ -4,7 +4,9 @@
 *      Created universal simulator library with both x86_64 and arm64 architectures
 *      Reorganized libraries into separate device and simulator directories
 * Android: Fixed dynamic library loading to use proper package path resolution
-* Release: Download binaries at rumtime from GitHub from correpsonding release page
+* Release: Download binaries at runtime from GitHub from corresponding release page
+*         Added SHA256 checksum verification for downloaded native libraries
+*         Manifest now includes checksums for all platform binaries
 
 ## 0.9.7
 

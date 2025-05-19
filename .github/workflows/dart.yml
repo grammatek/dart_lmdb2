@@ -390,20 +390,49 @@ jobs:
           PACKAGE_VERSION="${{ steps.tag_info.outputs.package_version }}"
           IS_TEST="${{ steps.tag_info.outputs.is_test_release }}"
 
-          # Create manifest.json in the native_libs directory
+          # Generate SHA256 checksums for all native libraries
+          declare -A checksums
+          for file in $(find native_libs -type f -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.a" | sort); do
+            relpath="${file#native_libs/}"
+            checksum=$(sha256sum "$file" | cut -d' ' -f1)
+            checksums["$relpath"]="$checksum"
+          done
+
+          # Create manifest.json in the native_libs directory with checksums
           cat > native_libs/manifest.json << EOF
           {
             "version": "$PACKAGE_VERSION",
             "build_date": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
             "package": "$PACKAGE_NAME",
             "platforms": {
-              "linux": "linux/liblmdb.so",
-              "macos": "macos/liblmdb.dylib",
-              "windows": "windows/lmdb.dll",
-              "android-arm64": "android/arm64-v8a/liblmdb.so",
-              "android-x64": "android/x86_64/liblmdb.so",
-              "ios-device": "ios/device/liblmdb.a",
-              "ios-simulator": "ios/simulator/liblmdb.a"
+              "linux": {
+                "path": "linux/liblmdb.so",
+                "sha256": "${checksums[linux/liblmdb.so]}"
+              },
+              "macos": {
+                "path": "macos/liblmdb.dylib",
+                "sha256": "${checksums[macos/liblmdb.dylib]}"
+              },
+              "windows": {
+                "path": "windows/lmdb.dll",
+                "sha256": "${checksums[windows/lmdb.dll]}"
+              },
+              "android-arm64": {
+                "path": "android/arm64-v8a/liblmdb.so",
+                "sha256": "${checksums[android/arm64-v8a/liblmdb.so]}"
+              },
+              "android-x64": {
+                "path": "android/x86_64/liblmdb.so",
+                "sha256": "${checksums[android/x86_64/liblmdb.so]}"
+              },
+              "ios-device": {
+                "path": "ios/device/liblmdb.a",
+                "sha256": "${checksums[ios/device/liblmdb.a]}"
+              },
+              "ios-simulator": {
+                "path": "ios/simulator/liblmdb.a",
+                "sha256": "${checksums[ios/simulator/liblmdb.a]}"
+              }
             }
           }
           EOF
