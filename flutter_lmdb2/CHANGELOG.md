@@ -1,3 +1,8 @@
+## 0.9.5
+
+* Fix fetch_native to download libraries to flutter_lmdb2 package directory when run from consumer apps
+* Use Isolate.resolvePackageUri to reliably find package location
+
 ## 0.9.4
 
 * Bump dependency to dart_lmdb2 0.9.11

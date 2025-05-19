@@ -171,23 +171,58 @@ jobs:
       - name: Build and Validate iOS Plugin
         if: matrix.os == 'macos-latest'
         run: |
-          cd example/ios || exit 1
+          # First, get dependencies
+          cd example || exit 1
+          flutter pub get
+
+          # Download native libraries to flutter_lmdb2
+          echo "Downloading native libraries..."
+          dart run flutter_lmdb2:fetch_native
+
+          # Get plugin path and verify libraries exist
+          PLUGIN_PATH=$(cd ios/.symlinks/plugins/flutter_lmdb2 2>/dev/null || echo "Plugin not found")
+          echo "Plugin path: $PLUGIN_PATH"
+          if [ -d "$PLUGIN_PATH" ]; then
+            echo "Checking for iOS libraries:"
+            ls -la "$PLUGIN_PATH/lib/src/native/ios/device/" || echo "Device libs not found"
+            ls -la "$PLUGIN_PATH/lib/src/native/ios/simulator/" || echo "Simulator libs not found"
+          fi
+
+          # Now install pods
+          cd ios || exit 1
           pod repo update
           pod install --verbose
           cd ..
-          flutter pub get
-          dart run flutter_lmdb2:fetch_native
+
+          # Build
           flutter build ios --no-codesign
 
       - name: Build and Validate MacOS Plugin
         if: matrix.os == 'macos-latest'
         run: |
-          cd example/macos || exit 1
+          # First, get dependencies
+          cd example || exit 1
+          flutter pub get
+
+          # Download native libraries to flutter_lmdb2
+          echo "Downloading native libraries..."
+          dart run flutter_lmdb2:fetch_native
+
+          # Get plugin path and verify libraries exist
+          PLUGIN_PATH=$(cd macos/.symlinks/plugins/flutter_lmdb2 2>/dev/null || echo "Plugin not found")
+          echo "Plugin path: $PLUGIN_PATH"
+          if [ -d "$PLUGIN_PATH" ]; then
+            echo "Checking for macOS libraries:"
+            ls -la "$PLUGIN_PATH/lib/src/native/macos/" || echo "macOS libs not found"
+          fi
+
+          # Now install pods
+          cd macos || exit 1
           pod repo update
           pod install --verbose
           cd ..
-          flutter pub get
-          dart run flutter_lmdb2:fetch_native
+
+          # Build
           flutter build macos
 
       - name: Android Setup
@@ -199,6 +234,17 @@ jobs:
       - name: Build Android Example
         run: |
           cd example
+          flutter pub get
+          dart run flutter_lmdb2:fetch_native
+
+          # Check if libraries were downloaded correctly
+          PLUGIN_PATH=$(cd .dart_tool/pub/bin/flutter_lmdb2 2>/dev/null || echo "Plugin not found")
+          echo "Plugin path: $PLUGIN_PATH"
+          if [ -d "$PLUGIN_PATH" ]; then
+            echo "Checking for Android libraries:"
+            find "$PLUGIN_PATH" -name "*.so" | sort || echo "Android libs not found"
+          fi
+
           flutter doctor
           flutter build apk --release
 

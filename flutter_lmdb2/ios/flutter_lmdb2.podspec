@@ -5,7 +5,7 @@
 Pod::Spec.new do |s|
   s.name             = 'flutter_lmdb2'
   s.module_name      = 'flutter_lmdb2'
-  s.version          = '0.9.1'
+  s.version          = '0.9.5'
   s.summary          = 'LMDB for Flutter'
   s.description      = 'LMDB library for Flutter with iOS support'
   s.homepage         = 'https://github.com/grammatek/dart_lmdb2'

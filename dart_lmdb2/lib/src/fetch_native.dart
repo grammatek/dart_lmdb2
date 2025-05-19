@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:isolate';
 import 'package:http/http.dart' as http;
 import 'package:yaml/yaml.dart';
 import 'package:path/path.dart' as path;
@@ -12,10 +13,42 @@ Future<void> fetchNativeLibraries({String? targetDir}) async {
   final version = await detectVersion();
   final packageName = await detectPackageName();
 
+  // Determine the target directory (where we'll download the libraries)
+  String nativePath;
+
+  if (targetDir != null) {
+    // If a specific target directory is provided, use it (e.g., from flutter_lmdb2)
+    nativePath = targetDir;
+  } else {
+    // No target provided - we need to determine the dart_lmdb2 package directory
+    // Use package URI resolution to find the dart_lmdb2 package location
+    try {
+      final packageUri = Uri.parse('package:dart_lmdb2/lmdb.dart');
+      final resolvedUri = await Isolate.resolvePackageUri(packageUri);
+
+      if (resolvedUri == null) {
+        throw Exception('Could not resolve dart_lmdb2 package location');
+      }
+
+      // Get the package root (two levels up from lib/lmdb.dart)
+      // Use path.dirname for platform-independent path handling
+      final libDir = path.dirname(resolvedUri.toFilePath());
+      final packageRoot = path.dirname(libDir);
+      nativePath = path.join(packageRoot, 'lib', 'src', 'native');
+
+      print('Resolved dart_lmdb2 package at: $packageRoot');
+    } catch (e) {
+      // Fallback to current directory if package resolution fails
+      print('Warning: Could not resolve package path: $e');
+      print('Falling back to local directory');
+      nativePath = path.join('lib', 'src', 'native');
+    }
+  }
+
   print('Fetching native libraries for $packageName v$version...');
+  print('Target directory: $nativePath');
 
   // Check if libraries already exist with correct version
-  final nativePath = targetDir ?? path.join('lib', 'src', 'native');
   if (await checkVersionMatch(nativePath, version)) {
     print('Native libraries are up to date (v$version).');
     return;
