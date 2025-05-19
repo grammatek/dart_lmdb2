@@ -1,3 +1,10 @@
+## 0.9.11
+
+* Fix consumer package version detection - `dart run flutter_lmdb2:fetch_native` now works correctly from any project
+* Add automated version synchronization with git hooks to prevent version mismatches
+* Add CI verification for version consistency
+* Fix static analysis issues - use relative imports for internal source files
+
 ## 0.9.10
 * Tackle even more style issues found in 0.9.9
 
