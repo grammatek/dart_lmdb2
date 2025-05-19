@@ -5,6 +5,7 @@ import 'package:yaml/yaml.dart';
 import 'package:path/path.dart' as path;
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
+import 'version.dart';
 
 /// Downloads native libraries from GitHub releases with manifest support
 Future<void> fetchNativeLibraries({String? targetDir}) async {
@@ -57,16 +58,17 @@ Future<String> detectPackageName() async {
 Future<String> detectVersion() async {
   final pubspecFile = File('pubspec.yaml');
   if (!pubspecFile.existsSync()) {
-    throw Exception('pubspec.yaml not found');
+    // If running as consumer and pubspec.yaml not found, use embedded version
+    return dartLmdb2Version;
   }
 
   final pubspecContent = await pubspecFile.readAsString();
   final pubspec = loadYaml(pubspecContent);
   final packageName = pubspec['name'];
 
-  // If we're in dart_lmdb2, use its version
+  // If we're in dart_lmdb2, use the embedded version to ensure accuracy
   if (packageName == 'dart_lmdb2') {
-    return pubspec['version'];
+    return dartLmdb2Version;
   }
 
   // If we're in flutter_lmdb2, get dart_lmdb2 dependency version
@@ -89,7 +91,8 @@ Future<String> detectVersion() async {
         'Could not determine dart_lmdb2 version from flutter_lmdb2');
   }
 
-  throw Exception('This script only works with dart_lmdb2 or flutter_lmdb2');
+  // For any other consumer package, use the embedded version
+  return dartLmdb2Version;
 }
 
 /// Checks if the native libraries match the expected version

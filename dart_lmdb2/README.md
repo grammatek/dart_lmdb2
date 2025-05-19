@@ -156,6 +156,22 @@ dart run dart_lmdb2:fetch_native
 
 ## Development
 
+### Setting up Git Hooks
+
+To ensure version consistency between `pubspec.yaml` and the embedded version, install the git hooks:
+
+```bash
+./tool/install-hooks.sh
+```
+
+This will install a pre-commit hook that automatically updates `lib/src/version.dart` whenever `pubspec.yaml` changes. You can verify version consistency at any time:
+
+```bash
+dart run tool/verify_version.dart
+```
+
+### Native Libraries
+
 Native libraries are stored in `lib/src/native/` after download:
 ```bash
 > tree lib/src/native/
