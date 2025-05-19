@@ -1,3 +1,6 @@
+## 0.9.10
+* Tackle even more style issues found in 0.9.9
+
 ## 0.9.9
 * Tackle style issues found in 0.9.8
 

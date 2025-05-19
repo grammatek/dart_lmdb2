@@ -17,6 +17,7 @@ doc/api/
 # Exclude build directories
 build/
 build_*
+build-*
 .dart_tool/
 *.iml
 .idea/
