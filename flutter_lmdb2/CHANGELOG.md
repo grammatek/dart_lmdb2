@@ -1,6 +1,7 @@
 ## 0.9.3
 
 * Updated dependency to dart_lmdb2 0.9.8
+* Updated path dependency to 1.9.1 for compatibility
 
 ## 0.9.2
 

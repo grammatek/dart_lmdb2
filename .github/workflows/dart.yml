@@ -126,82 +126,81 @@ jobs:
             ./dart_lmdb2/lib/src/native/ios/device/
             ./dart_lmdb2/lib/src/native/ios/simulator/
 
-  # Temporarily disabled until dart_lmdb2 v0.9.8 is published
-  # build_test_flutter_lmdb2:
-  #   strategy:
-  #     matrix:
-  #       os: [macos-latest]
-  #       flutter: ['3.27.1']
-  #   runs-on: ${{ matrix.os }}
-  #   defaults:
-  #     run:
-  #       working-directory: ./flutter_lmdb2
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: subosito/flutter-action@v2
-  #       with:
-  #         flutter-version: ${{ matrix.flutter }}
-  #         channel: 'stable'
-  #     - uses: actions/cache@v4
-  #       with:
-  #         path: |
-  #           ~/.pub-cache
-  #           ~/.gradle
-  #           ~/Library/Caches/CocoaPods
-  #         key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-flutter-
-  #     - name: Install dependencies
-  #       run: |
-  #         flutter config --no-analytics --no-cli-animations
-  #         flutter pub get
-  #         cd example || exit 1
-  #         flutter pub get
-  #         cd ..
-  #         dart run flutter_lmdb2:fetch_native
-  #     - name: iOS Setup
-  #       if: matrix.os == 'macos-latest'
-  #       run: |
-  #         flutter config --enable-ios
-  #         flutter precache --ios  # Cache iOS dependencies
-  #
-  #     - name: Build and Validate iOS Plugin
-  #       if: matrix.os == 'macos-latest'
-  #       run: |
-  #         cd example/ios || exit 1
-  #         pod repo update
-  #         pod install --verbose
-  #         cd ..
-  #         flutter pub get
-  #         dart run flutter_lmdb2:fetch_native
-  #         flutter build ios --no-codesign
-  #
-  #     - name: Build and Validate MacOS Plugin
-  #       if: matrix.os == 'macos-latest'
-  #       run: |
-  #         cd example/macos || exit 1
-  #         pod repo update
-  #         pod install --verbose
-  #         cd ..
-  #         flutter pub get
-  #         dart run flutter_lmdb2:fetch_native
-  #         flutter build macos
-  #
-  #     - name: Android Setup
-  #       run: |
-  #         flutter config --enable-android
-  #         flutter precache --android
-  #         yes | flutter doctor --android-licenses
-  #
-  #     - name: Build Android Example
-  #       run: |
-  #         cd example
-  #         flutter doctor
-  #         flutter build apk --release
+  build_test_flutter_lmdb2:
+    strategy:
+      matrix:
+        os: [macos-latest]
+        flutter: ['3.27.1']
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ./flutter_lmdb2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter }}
+          channel: 'stable'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.gradle
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+      - name: Install dependencies
+        run: |
+          flutter config --no-analytics --no-cli-animations
+          flutter pub get
+          cd example || exit 1
+          flutter pub get
+          cd ..
+          dart run flutter_lmdb2:fetch_native
+      - name: iOS Setup
+        if: matrix.os == 'macos-latest'
+        run: |
+          flutter config --enable-ios
+          flutter precache --ios  # Cache iOS dependencies
+
+      - name: Build and Validate iOS Plugin
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd example/ios || exit 1
+          pod repo update
+          pod install --verbose
+          cd ..
+          flutter pub get
+          dart run flutter_lmdb2:fetch_native
+          flutter build ios --no-codesign
+
+      - name: Build and Validate MacOS Plugin
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd example/macos || exit 1
+          pod repo update
+          pod install --verbose
+          cd ..
+          flutter pub get
+          dart run flutter_lmdb2:fetch_native
+          flutter build macos
+
+      - name: Android Setup
+        run: |
+          flutter config --enable-android
+          flutter precache --android
+          yes | flutter doctor --android-licenses
+
+      - name: Build Android Example
+        run: |
+          cd example
+          flutter doctor
+          flutter build apk --release
 
   collect_artifacts:
     if: always()
-    needs: [build_test_dart_lmdb2]
+    needs: [build_test_dart_lmdb2, build_test_flutter_lmdb2]
     runs-on: ubuntu-latest
     steps:
       - name: Download all platform libraries
