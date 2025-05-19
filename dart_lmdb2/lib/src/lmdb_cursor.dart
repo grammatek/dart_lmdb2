@@ -77,6 +77,7 @@ class CursorEntry {
   /// Raw binary value data
   final List<int> data;
 
+  /// Creates a cursor entry with raw binary key and data
   CursorEntry({required this.key, required this.data});
 
   /// Convenience method to decode the key as UTF-8 string
