@@ -1,3 +1,10 @@
+## 0.9.12
+
+* Fix fetch_native to download libraries to dart_lmdb2 package directory when run from consumer apps
+* Use Isolate.resolvePackageUri to reliably find package location regardless of where script is run
+* This ensures native libraries work correctly in Dart apps using FFI
+* Fix mismatch between download location and loading path used by `DynamicLibrary.open()`
+
 ## 0.9.11
 
 * Fix consumer package version detection - `dart run flutter_lmdb2:fetch_native` now works correctly from any project
@@ -14,12 +21,12 @@
 ## 0.9.8
 
 * iOS: Added support for iOS simulators with architecture-specific builds
-*      Created universal simulator library with both x86_64 and arm64 architectures
-*      Reorganized libraries into separate device and simulator directories
+* iOS: Created universal simulator library with both x86_64 and arm64 architectures
+* iOS: Reorganized libraries into separate device and simulator directories
 * Android: Fixed dynamic library loading to use proper package path resolution
 * Release: Download binaries at runtime from GitHub from corresponding release page
-*         Added SHA256 checksum verification for downloaded native libraries
-*         Manifest now includes checksums for all platform binaries
+* Release: Added SHA256 checksum verification for downloaded native libraries
+* Release: Manifest now includes checksums for all platform binaries
 
 ## 0.9.7
 

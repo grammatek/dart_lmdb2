@@ -10,7 +10,7 @@ A high-performance, embedded database for Dart applications, wrapping LMDB (Ligh
 
 ---
 
-**Note: Native binaries for all platforms are automatically downloaded on first use. For iOS/Android you need Flutter to run them on your mobile device. See [flutter_lmdb2](https://pub.dev/packages/flutter_lmdb2)**
+**Note: Native binaries must be downloaded before use by running `dart run dart_lmdb2:fetch_native`. For iOS/Android you need Flutter to run them on your mobile device. See [flutter_lmdb2](https://pub.dev/packages/flutter_lmdb2)**
 
 ## Why LMDB?
 
@@ -148,11 +148,13 @@ await db.init('path/to/db', config: config);
 
 ## Native Libraries
 
-Native libraries are automatically downloaded from GitHub releases on first use. They include SHA256 checksum verification for security. You can also manually download them:
+Native libraries must be downloaded from GitHub releases before use. They include SHA256 checksum verification for security. Download them by running:
 
 ```bash
 dart run dart_lmdb2:fetch_native
 ```
+
+This command downloads libraries to the dart_lmdb2 package directory (not your application directory), ensuring they're in the correct location for FFI loading.
 
 ## Development
 
