@@ -1,6 +1,6 @@
 name: dart_lmdb2
 description: A modern Dart wrapper for LMDB (Lightning Memory-Mapped Database), providing both high-level convenience methods and low-level transaction control.
-version: 0.9.8
+version: 0.9.9
 homepage: https://github.com/grammatek/dart_lmdb2
 
 environment:

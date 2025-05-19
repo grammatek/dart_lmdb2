@@ -8,13 +8,16 @@ environment:
   flutter: ">=3.7.9"
 
 dependencies:
-  path: ^1.8.0
+  path: ^1.9.1
   flutter:
     sdk: flutter
-  dart_lmdb2: '^0.9.7'
+  dart_lmdb2: '^0.9.8'
   #if you are developing dart_lmdb2:
   #dart_lmdb2:
   #  path: '../dart_lmdb2'
+
+dev_dependencies:
+  pana: ^0.22.17
 
 executables:
   fetch_native: fetch_native
