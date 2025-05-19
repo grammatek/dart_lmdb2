@@ -41,11 +41,7 @@ class LMDBNative {
       return DynamicLibrary.process();
     }
 
-    if (Platform.isAndroid) {
-      return DynamicLibrary.open("liblmdb.so");
-    }
-
-    // default dart_lmdb2 loading for non-Flutter platforms
+    // For all other platforms including Android, use path resolution
     return DynamicLibrary.open(_resolveLibraryPath());
   }
 

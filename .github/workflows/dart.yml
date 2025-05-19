@@ -15,15 +15,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
+            name: linux
+            cmake-install: sudo apt-get install -y cmake build-essential
+            build-android: false
+          - os: ubuntu-latest
+            name: android
             cmake-install: sudo apt-get install -y cmake build-essential
             build-android: true
           - os: macos-latest
+            name: macos
             cmake-install: brew install cmake
             build-ios: true
           - os: windows-latest
+            name: windows
             cmake-install: choco install cmake
     runs-on: ${{ matrix.os }}
     defaults:
@@ -51,13 +57,14 @@ jobs:
       - name: Install dependencies
         run: dart pub get
 
-      # Native Builds
+      # Native Builds (skip if Android-only build)
       - name: Build native library
+        if: matrix.build-android == false
         run: dart run tool/build.dart
 
-      # Android Build
+      # Android Build (only for Android-specific runners)
       - name: Build Android libraries
-        if: matrix.build-android
+        if: matrix.build-android == true
         run: dart run tool/build.dart --android
 
       # iOS Build
@@ -73,110 +80,128 @@ jobs:
         run: dart analyze --fatal-infos
 
       - name: Run tests
-        if: ${{ !matrix.build-android && !matrix.build-ios }}
+        if: matrix.build-android == false && matrix.build-ios != true
         run: dart test -j 1
 
       - name: Upload native libraries
+        if: matrix.build-android == false
         uses: actions/upload-artifact@v4
         with:
-          name: native-lib-${{ matrix.os }}
+          name: native-lib-${{ matrix.name }}
+          if-no-files-found: error
           path: |
-            dart_lmdb2/lib/src/native/
-            !dart_lmdb2/lib/src/native/android/
-            !dart_lmdb2/lib/src/native/ios/
+            ./dart_lmdb2/lib/src/native/
+            !./dart_lmdb2/lib/src/native/android/
+            !./dart_lmdb2/lib/src/native/ios/
+
+      - name: Check Android build output
+        if: matrix.build-android == true
+        run: |
+          echo "Current working directory: $(pwd)"
+          echo "Android build output (absolute paths):"
+          find $(pwd)/lib/src/native/android -type f | sort || echo "No Android files found"
+          echo "Android build output (relative paths):"
+          find lib/src/native/android -type f | sort || echo "No Android files found"
+          echo "All .so files:"
+          find . -name "*.so" | sort || echo "No .so files found"
+          echo "Directory structure:"
+          ls -la lib/src/native/android/
 
       - name: Upload Android libraries
-        if: matrix.build-android
+        if: matrix.build-android == true
         uses: actions/upload-artifact@v4
         with:
           name: native-lib-android
-          path: dart_lmdb2/lib/src/native/android/
+          if-no-files-found: error
+          path: ./dart_lmdb2/lib/src/native/android/**/*.so
 
       - name: Upload iOS libraries
         if: matrix.build-ios
         uses: actions/upload-artifact@v4
         with:
           name: native-lib-ios
+          if-no-files-found: error
           path: |
-            dart_lmdb2/lib/src/native/ios/
-            dart_lmdb2/lib/src/native/ios/device/
-            dart_lmdb2/lib/src/native/ios/simulator/
+            ./dart_lmdb2/lib/src/native/ios/
+            ./dart_lmdb2/lib/src/native/ios/device/
+            ./dart_lmdb2/lib/src/native/ios/simulator/
 
-  build_test_flutter_lmdb2:
-    strategy:
-      matrix:
-        os: [macos-latest]
-        flutter: ['3.27.1']
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: ./flutter_lmdb2
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ matrix.flutter }}
-          channel: 'stable'
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            ~/.gradle
-            ~/Library/Caches/CocoaPods
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
-      - name: Install dependencies
-        run: |
-          flutter config --no-analytics --no-cli-animations
-          flutter pub get
-          cd example || exit 1
-          flutter pub get
-          cd ..
-          dart run flutter_lmdb2:fetch_native
-      - name: iOS Setup
-        if: matrix.os == 'macos-latest'
-        run: |
-          flutter config --enable-ios
-          flutter precache --ios  # Cache iOS dependencies
-
-      - name: Build and Validate iOS Plugin
-        if: matrix.os == 'macos-latest'
-        run: |
-          cd example/ios || exit 1
-          pod repo update
-          pod install --verbose
-          cd ..
-          flutter pub get
-          dart run flutter_lmdb2:fetch_native
-          flutter build ios --no-codesign
-
-      - name: Build and Validate MacOS Plugin
-        if: matrix.os == 'macos-latest'
-        run: |
-          cd example/macos || exit 1
-          pod repo update
-          pod install --verbose
-          cd ..
-          flutter pub get
-          dart run flutter_lmdb2:fetch_native
-          flutter build macos
-
-      - name: Android Setup
-        run: |
-          flutter config --enable-android
-          flutter precache --android
-          yes | flutter doctor --android-licenses
-
-      - name: Build Android Example
-        run: |
-          cd example
-          flutter doctor
-          flutter build apk --release
+  # Temporarily disabled until dart_lmdb2 v0.9.8 is published
+  # build_test_flutter_lmdb2:
+  #   strategy:
+  #     matrix:
+  #       os: [macos-latest]
+  #       flutter: ['3.27.1']
+  #   runs-on: ${{ matrix.os }}
+  #   defaults:
+  #     run:
+  #       working-directory: ./flutter_lmdb2
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         flutter-version: ${{ matrix.flutter }}
+  #         channel: 'stable'
+  #     - uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.pub-cache
+  #           ~/.gradle
+  #           ~/Library/Caches/CocoaPods
+  #         key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-flutter-
+  #     - name: Install dependencies
+  #       run: |
+  #         flutter config --no-analytics --no-cli-animations
+  #         flutter pub get
+  #         cd example || exit 1
+  #         flutter pub get
+  #         cd ..
+  #         dart run flutter_lmdb2:fetch_native
+  #     - name: iOS Setup
+  #       if: matrix.os == 'macos-latest'
+  #       run: |
+  #         flutter config --enable-ios
+  #         flutter precache --ios  # Cache iOS dependencies
+  #
+  #     - name: Build and Validate iOS Plugin
+  #       if: matrix.os == 'macos-latest'
+  #       run: |
+  #         cd example/ios || exit 1
+  #         pod repo update
+  #         pod install --verbose
+  #         cd ..
+  #         flutter pub get
+  #         dart run flutter_lmdb2:fetch_native
+  #         flutter build ios --no-codesign
+  #
+  #     - name: Build and Validate MacOS Plugin
+  #       if: matrix.os == 'macos-latest'
+  #       run: |
+  #         cd example/macos || exit 1
+  #         pod repo update
+  #         pod install --verbose
+  #         cd ..
+  #         flutter pub get
+  #         dart run flutter_lmdb2:fetch_native
+  #         flutter build macos
+  #
+  #     - name: Android Setup
+  #       run: |
+  #         flutter config --enable-android
+  #         flutter precache --android
+  #         yes | flutter doctor --android-licenses
+  #
+  #     - name: Build Android Example
+  #       run: |
+  #         cd example
+  #         flutter doctor
+  #         flutter build apk --release
 
   collect_artifacts:
     if: always()
-    needs: [build_test_dart_lmdb2, build_test_flutter_lmdb2]
+    needs: [build_test_dart_lmdb2]
     runs-on: ubuntu-latest
     steps:
       - name: Download all platform libraries
@@ -189,19 +214,63 @@ jobs:
         run: |
           echo "Collected artifacts:"
           find collected_artifacts -type f -name "*.dylib" -o -name "*.a" -o -name "*.so" -o -name "*.dll" -o -name "*.lib" | sort
+          echo ""
+          echo "Android artifact structure:"
+          find collected_artifacts/native-lib-android -type f | sort || echo "No Android artifacts found"
+          echo ""
+          echo "Linux artifact structure:"
+          find collected_artifacts/native-lib-linux -type f | sort || echo "No Linux artifacts found"
+          echo ""
+          echo "macOS artifact structure:"
+          find collected_artifacts/native-lib-macos -type f | sort || echo "No macOS artifacts found"
+          echo ""
+          echo "Windows artifact structure:"
+          find collected_artifacts/native-lib-windows -type f | sort || echo "No Windows artifacts found"
+          echo ""
+          echo "iOS artifact structure:"
+          find collected_artifacts/native-lib-ios -type f | sort || echo "No iOS artifacts found"
+          echo ""
+          echo "Full artifact structure:"
+          find collected_artifacts -type f | sort
 
       - name: Prepare final artifact structure
         run: |
           mkdir -p final_artifacts/lib/src/native
+          mkdir -p final_artifacts/lib/src/native/android/arm64-v8a
+          mkdir -p final_artifacts/lib/src/native/android/x86_64
           mkdir -p final_artifacts/lib/src/native/ios/device
           mkdir -p final_artifacts/lib/src/native/ios/simulator
-          # Copy platform specific files
-          cp -r collected_artifacts/native-lib-*/macos final_artifacts/lib/src/native/ || true
-          cp -r collected_artifacts/native-lib-*/windows final_artifacts/lib/src/native/ || true
-          cp -r collected_artifacts/native-lib-*/linux final_artifacts/lib/src/native/ || true
-          cp -r collected_artifacts/native-lib-android/* final_artifacts/lib/src/native/android/ || true
+          # Copy platform specific files (non-Android platforms don't have dart_lmdb2 prefix)
+          echo "Copying platform-specific files..."
+          echo "Looking for macOS files:"
+          ls -la collected_artifacts/native-lib-macos/macos/ 2>/dev/null || echo "No macOS files found"
+          cp -r collected_artifacts/native-lib-macos/macos final_artifacts/lib/src/native/ || echo "Failed to copy macOS files"
 
-          # Copy iOS files
+          echo "Looking for Windows files:"
+          ls -la collected_artifacts/native-lib-windows/windows/ 2>/dev/null || echo "No Windows files found"
+          cp -r collected_artifacts/native-lib-windows/windows final_artifacts/lib/src/native/ || echo "Failed to copy Windows files"
+
+          echo "Looking for Linux files:"
+          ls -la collected_artifacts/native-lib-linux/linux/ 2>/dev/null || echo "No Linux files found"
+          cp -r collected_artifacts/native-lib-linux/linux final_artifacts/lib/src/native/ || echo "Failed to copy Linux files"
+
+          # Move Android files to the correct structure
+          if [ -d "collected_artifacts/native-lib-android" ]; then
+            echo "Processing Android artifacts..."
+            # Find all .so files and move them to the correct directory structure
+            find collected_artifacts/native-lib-android -name "*.so" | while read -r file; do
+              # Check which ABI directory the file is in
+              if [[ "$file" == */arm64-v8a/* ]]; then
+                echo "Moving $file to android/arm64-v8a/"
+                mv "$file" final_artifacts/lib/src/native/android/arm64-v8a/ || true
+              elif [[ "$file" == */x86_64/* ]]; then
+                echo "Moving $file to android/x86_64/"
+                mv "$file" final_artifacts/lib/src/native/android/x86_64/ || true
+              fi
+            done
+          fi
+
+          # Copy iOS files (iOS structure is different - no ios/ subdirectory)
           if [ -d "collected_artifacts/native-lib-ios" ]; then
             mkdir -p final_artifacts/lib/src/native/ios/device
             mkdir -p final_artifacts/lib/src/native/ios/simulator
@@ -209,10 +278,47 @@ jobs:
             cp collected_artifacts/native-lib-ios/simulator/liblmdb.a final_artifacts/lib/src/native/ios/simulator/ || true
           fi
 
+      # Remove duplicate native libraries from root platform directories
+      - name: Clean up duplicate native libraries
+        run: |
+          echo "Removing duplicate native libraries from root platform directories..."
+          # Remove Android libraries
+          rm -f final_artifacts/android/**/*.so || true
+          # Remove iOS libraries
+          rm -f final_artifacts/ios/**/*.a || true
+          # Remove Linux libraries
+          rm -f final_artifacts/linux/*.so || true
+          rm -f final_artifacts/linux/*.a || true
+          # Remove macOS libraries
+          rm -f final_artifacts/macos/*.dylib || true
+          rm -f final_artifacts/macos/*.a || true
+          # Remove Windows libraries
+          rm -f final_artifacts/windows/*.dll || true
+          rm -f final_artifacts/windows/*.lib || true
+          echo "Cleanup completed"
+
+      - name: Show final artifact structure
+        run: |
+          echo "Final artifact structure before upload:"
+          find final_artifacts -type f | sort
+          echo ""
+          echo "Contents by platform:"
+          echo "Linux files:"
+          find final_artifacts -name "*.so" -not -path "*/android/*" | sort
+          echo "macOS files:"
+          find final_artifacts -name "*.dylib" | sort
+          echo "Windows files:"
+          find final_artifacts -name "*.dll" | sort
+          echo "Android files:"
+          find final_artifacts -path "*/android/*" -name "*.so" | sort
+          echo "iOS files:"
+          find final_artifacts -name "*.a" | sort
+
       - name: Upload final artifacts
         uses: actions/upload-artifact@v4
         with:
           name: all-native-libraries
+          if-no-files-found: error
           path: final_artifacts/lib/src/native
 
   docs_dart_lmdb2:
@@ -283,6 +389,53 @@ jobs:
           PACKAGE_NAME="${{ steps.tag_info.outputs.package_name }}"
           PACKAGE_VERSION="${{ steps.tag_info.outputs.package_version }}"
           IS_TEST="${{ steps.tag_info.outputs.is_test_release }}"
+
+          # Generate SHA256 checksums for all native libraries
+          declare -A checksums
+          for file in $(find native_libs -type f -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.a" | sort); do
+            relpath="${file#native_libs/}"
+            checksum=$(sha256sum "$file" | cut -d' ' -f1)
+            checksums["$relpath"]="$checksum"
+          done
+
+          # Create manifest.json in the native_libs directory with checksums
+          cat > native_libs/manifest.json << EOF
+          {
+            "version": "$PACKAGE_VERSION",
+            "build_date": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
+            "package": "$PACKAGE_NAME",
+            "platforms": {
+              "linux": {
+                "path": "linux/liblmdb.so",
+                "sha256": "${checksums[linux/liblmdb.so]}"
+              },
+              "macos": {
+                "path": "macos/liblmdb.dylib",
+                "sha256": "${checksums[macos/liblmdb.dylib]}"
+              },
+              "windows": {
+                "path": "windows/lmdb.dll",
+                "sha256": "${checksums[windows/lmdb.dll]}"
+              },
+              "android-arm64": {
+                "path": "android/arm64-v8a/liblmdb.so",
+                "sha256": "${checksums[android/arm64-v8a/liblmdb.so]}"
+              },
+              "android-x64": {
+                "path": "android/x86_64/liblmdb.so",
+                "sha256": "${checksums[android/x86_64/liblmdb.so]}"
+              },
+              "ios-device": {
+                "path": "ios/device/liblmdb.a",
+                "sha256": "${checksums[ios/device/liblmdb.a]}"
+              },
+              "ios-simulator": {
+                "path": "ios/simulator/liblmdb.a",
+                "sha256": "${checksums[ios/simulator/liblmdb.a]}"
+              }
+            }
+          }
+          EOF
 
           # Create README in the native_libs directory
           if [[ "$IS_TEST" == "true" ]]; then

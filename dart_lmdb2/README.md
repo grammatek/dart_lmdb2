@@ -10,7 +10,7 @@ A high-performance, embedded database for Dart applications, wrapping LMDB (Ligh
 
 ---
 
-**Note: Precompiled native binaries for all platforms are bundled inside the Dart package, but for iOS/Android you need Flutter to run them on your mobile device. See [flutter_lmdb2](https://pub.dev/packages/flutter_lmdb2)**
+**Note: Native binaries for all platforms are automatically downloaded on first use. For iOS/Android you need Flutter to run them on your mobile device. See [flutter_lmdb2](https://pub.dev/packages/flutter_lmdb2)**
 
 ## Why LMDB?
 
@@ -112,7 +112,7 @@ Import and use:
 import 'package:lmdb2/lmdb2.dart';
 
 void main() async {
-    final db = ();
+    final db = LMDB();
     await db.init('path/to/db');
 
     // Simple auto-transaction operations
@@ -146,25 +146,37 @@ final config = LMDBInitConfig(
 await db.init('path/to/db', config: config);
 ```
 
+## Native Libraries
+
+Native libraries are automatically downloaded from GitHub releases on first use. They include SHA256 checksum verification for security. You can also manually download them:
+
+```bash
+dart run dart_lmdb2:fetch_native
+```
+
 ## Development
 
-All native libraries are already bundled inside the directory `lib/src/native`:
+Native libraries are stored in `lib/src/native/` after download:
 ```bash
 > tree lib/src/native/
 lib/src/native/
 ├── android
-│   ├── arm64-v8a
-│   │   └── liblmdb.so
-│   └── x86_64
-│       └── liblmdb.so
+│   ├── arm64-v8a
+│   │   └── liblmdb.so
+│   └── x86_64
+│       └── liblmdb.so
 ├── ios
-│   └── liblmdb.a
+│   ├── device
+│   │   └── liblmdb.a
+│   └── simulator
+│       └── liblmdb.a
 ├── linux
-│   └── liblmdb.so
+│   └── liblmdb.so
 ├── macos
-│   └── liblmdb.dylib
-└── windows
-    └── lmdb.dll
+│   └── liblmdb.dylib
+├── windows
+│   └── lmdb.dll
+└── manifest.json
 ```
 
 You can rebuild these via the following steps:

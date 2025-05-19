@@ -322,3 +322,6 @@ export 'src/lmdb_cursor.dart';
 export 'src/lmdb_exception.dart';
 export 'src/lmdb_flags.dart';
 export 'src/generated_bindings.dart' show MDB_txn;
+
+// Native library management
+export 'src/fetch_native.dart' show fetchNativeLibraries;
