@@ -1,17 +1,17 @@
 name: flutter_lmdb2
 description: Flutter plugin to include native LMDB (Lightning Memory-Mapped Database), providing both high-level convenience methods and low-level transaction control.
-version: 0.9.3
+version: 0.9.4
 homepage: https://github.com/grammatek/dart_lmdb2
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
-  flutter: ">=3.7.9"
+  flutter: '>=3.29.0'
 
 dependencies:
   path: ^1.9.1
   flutter:
     sdk: flutter
-  dart_lmdb2: '^0.9.8'
+  dart_lmdb2: '^0.9.11'
   #if you are developing dart_lmdb2:
   #dart_lmdb2:
   #  path: '../dart_lmdb2'

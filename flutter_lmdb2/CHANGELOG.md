@@ -1,3 +1,8 @@
+## 0.9.4
+
+* Bump dependency to dart_lmdb2 0.9.11
+* Bump dependency to flutter >= 3.29.0 (because of transitive dependencies of dart_lmdb2)
+
 ## 0.9.3
 
 * Updated dependency to dart_lmdb2 0.9.8
