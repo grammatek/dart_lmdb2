@@ -1,3 +1,6 @@
+## 0.9.9
+* Tackle style issues found in 0.9.8
+
 ## 0.9.8
 
 * iOS: Added support for iOS simulators with architecture-specific builds
