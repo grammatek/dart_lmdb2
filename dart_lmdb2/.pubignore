@@ -1,0 +1,48 @@
+# Exclude native libraries since they're downloaded on-demand
+lib/src/native/**/*.so
+lib/src/native/**/*.dylib
+lib/src/native/**/*.dll
+lib/src/native/**/*.a
+lib/src/native/**/*.lib
+
+# Alternatively, exclude the entire native directory
+# lib/src/native/
+
+# Exclude test data
+test_data/
+
+# Exclude auto-generated documentation
+doc/api/
+
+# Exclude build directories
+build/
+build_*
+.dart_tool/
+*.iml
+.idea/
+
+# Exclude macOS specific files
+.DS_Store
+
+# Exclude iOS build files
+ios/build/
+ios/.build/
+ios/device/
+ios/simulator/
+
+# Exclude Android/iOS/macOS/Linux/Windows build directories
+android/
+ios/
+macos/
+linux/
+windows/
+
+# Exclude scripts and tools not needed by users
+cleanup_test_releases.sh
+cleanup_test_releases_api.sh
+test_checksum_direct.dart
+test_checksum_failure.dart
+
+# Exclude any temporary files
+*.tmp
+*.bak
