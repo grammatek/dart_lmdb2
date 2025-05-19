@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
-import 'build_exception.dart';
+import 'package:dart_lmdb2/src/build_exception.dart';
 
 /// Build the iOS library
 Future<void> buildIosLibrary(Directory projectDir) async {
