@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
-import 'package:dart_lmdb2/src/build_exception.dart';
+import 'build_exception.dart';
 
 final List<String> androidAbis = [
   // no 32-bit archs supported, as disallowed in Google Play since August 2021

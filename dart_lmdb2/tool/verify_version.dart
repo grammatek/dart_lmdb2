@@ -24,7 +24,8 @@ void main() {
   }
 
   final versionContent = versionFile.readAsStringSync();
-  final versionMatch = RegExp(r"const String dartLmdb2Version = '(.+)';").firstMatch(versionContent);
+  final versionMatch = RegExp(r"const String dartLmdb2Version = '(.+)';")
+      .firstMatch(versionContent);
 
   if (versionMatch == null) {
     print('Error: Could not parse version from version.dart');
