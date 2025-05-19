@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:isolate';
 import 'package:dart_lmdb2/lmdb.dart' as dart_lmdb2;
 import 'package:path/path.dart' as path;
