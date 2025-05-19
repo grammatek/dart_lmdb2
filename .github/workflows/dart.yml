@@ -57,6 +57,10 @@ jobs:
       - name: Install dependencies
         run: dart pub get
 
+      # Verify version consistency early
+      - name: Verify version consistency
+        run: dart run tool/verify_version.dart
+
       # Native Builds (skip if Android-only build)
       - name: Build native library
         if: matrix.build-android == false
