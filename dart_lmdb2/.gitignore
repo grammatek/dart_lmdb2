@@ -14,7 +14,3 @@ doc/api/
 *.dylib
 *.dll
 *.so
-!lib/src/native/**/*.a
-!lib/src/native/**/*.dll
-!lib/src/native/**/*.dylib
-!lib/src/native/**/*.so

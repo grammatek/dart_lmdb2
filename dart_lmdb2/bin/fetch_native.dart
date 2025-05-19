@@ -1,11 +1,11 @@
 #!/usr/bin/env dart
 
 import 'dart:io';
-import 'package:dart_lmdb2/src/fetch_native.dart';
+import 'package:dart_lmdb2/lmdb.dart' as lmdb;
 
 Future<void> main(List<String> args) async {
   try {
-    await fetchNativeLibraries();
+    await lmdb.fetchNativeLibraries();
   } catch (e) {
     print('Error: $e');
     exit(1);
