@@ -15,7 +15,7 @@ Flutter bindings for LMDB (Lightning Memory-Mapped Database).  This package is a
 ## Installation
 ```yaml
 dependencies:
-  flutter_lmdb2: ^0.9.3
+  flutter_lmdb2: ^0.9.5
 ```
 
 ## Additional Setup Steps

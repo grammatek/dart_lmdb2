@@ -11,7 +11,7 @@ dependencies:
   path: ^1.9.1
   flutter:
     sdk: flutter
-  dart_lmdb2: '^0.9.11'
+  dart_lmdb2: '^0.9.12'
   #if you are developing dart_lmdb2:
   #dart_lmdb2:
   #  path: '../dart_lmdb2'
