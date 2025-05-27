@@ -39,6 +39,9 @@ These are automatically selected based on your build target, ensuring compatibil
 - Simulators on Apple Silicon Macs (M1/M2/M3/M4)
 - Physical iOS devices
 
+You need to **turn off** "Strip dead symbols" and also set "Strip Style: non-global" in your iOS project settings, otherwise the Dart runtime cannot resolve the symbols of the native libraries for release builds at runtime, even though the library itself is statically linked.
+This is a known limitation of `Dart:ffi`.
+
 ## Example
 
 For a complete working example, check out the Flutter app in the [example/](example/README.md) subdirectory.

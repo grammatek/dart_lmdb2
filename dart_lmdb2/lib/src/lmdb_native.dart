@@ -32,7 +32,7 @@ class LMDBNative {
   DynamicLibrary _openLibrary() {
     if (Platform.isIOS) {
       // for iOS the library is statically linked
-      return DynamicLibrary.process();
+      return DynamicLibrary.executable();
     }
 
     if (Platform.isMacOS && _isStaticallyLinked()) {
