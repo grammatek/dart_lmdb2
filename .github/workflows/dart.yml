@@ -131,6 +131,9 @@ jobs:
             ./dart_lmdb2/lib/src/native/ios/simulator/
 
   build_test_flutter_lmdb2:
+    # Tests the plugin against the dart_lmdb2 and the native libraries of
+    # this commit, which are not released yet.
+    needs: collect_artifacts
     strategy:
       matrix:
         os: [macos-latest]
@@ -154,6 +157,19 @@ jobs:
           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-flutter-
+      - name: Download native libraries of this run
+        uses: actions/download-artifact@v8
+        with:
+          name: all-native-libraries
+          path: flutter_lmdb2/lib/src/native
+      - name: Use the packages of this commit
+        run: |
+          # fetch_native skips the download when the manifest matches the
+          # version of dart_lmdb2.
+          VERSION=$(grep '^version:' ../dart_lmdb2/pubspec.yaml | cut -d' ' -f2)
+          printf '{"version": "%s"}\n' "$VERSION" > lib/src/native/manifest.json
+          printf 'dependency_overrides:\n  dart_lmdb2:\n    path: ../dart_lmdb2\n' > pubspec_overrides.yaml
+          printf 'dependency_overrides:\n  dart_lmdb2:\n    path: ../../dart_lmdb2\n  flutter_lmdb2:\n    path: ..\n' > example/pubspec_overrides.yaml
       - name: Install dependencies
         run: |
           flutter config --no-analytics --no-cli-animations
@@ -250,7 +266,7 @@ jobs:
 
   collect_artifacts:
     if: always()
-    needs: [build_test_dart_lmdb2, build_test_flutter_lmdb2]
+    needs: [build_test_dart_lmdb2]
     runs-on: ubuntu-latest
     steps:
       - name: Download all platform libraries
@@ -390,7 +406,7 @@ jobs:
 
   create_release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [collect_artifacts]
+    needs: [collect_artifacts, build_test_flutter_lmdb2]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
