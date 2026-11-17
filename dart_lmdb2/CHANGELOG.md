@@ -1,6 +1,8 @@
 ## 0.9.13
 
 * Load liblmdb.so by name on Android, because Isolate.resolvePackageUriSync is not supported inside a Flutter app
+* Publish lib/src/build_exception.dart and lib/src/build_util.dart again, the .pubignore excluded them
+* Update the dev dependencies to the current Dart SDK
 
 ## 0.9.12
 
