@@ -1,3 +1,7 @@
+## 0.9.13
+
+* Load liblmdb.so by name on Android, because Isolate.resolvePackageUriSync is not supported inside a Flutter app
+
 ## 0.9.12
 
 * Fix fetch_native to download libraries to dart_lmdb2 package directory when run from consumer apps
