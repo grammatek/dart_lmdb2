@@ -16,7 +16,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_lmdb2: ^0.9.5
+  flutter_lmdb2: ^0.9.6
   # if you are developing this package:
   #flutter_lmdb2:
   #  path: ../
