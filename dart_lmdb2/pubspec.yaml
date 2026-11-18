@@ -1,6 +1,6 @@
 name: dart_lmdb2
 description: A modern Dart wrapper for LMDB (Lightning Memory-Mapped Database), providing both high-level convenience methods and low-level transaction control.
-version: 0.9.12
+version: 0.9.13
 homepage: https://github.com/grammatek/dart_lmdb2
 
 environment:
@@ -16,12 +16,10 @@ dependencies:
   crypto: ^3.0.6
 
 dev_dependencies:
-  analyzer: ^6.11.0
-  ffigen: ^16.1.0
-  build_runner: ^2.4.15
-  lints: ^5.1.1
-  test: ^1.26.0
-  pana: ^0.22.21
+  ffigen: ^23.0.0
+  lints: ^6.1.0
+  test: ^1.33.0
+  pana: ^0.23.19
 
 ffigen:
   output: 'lib/src/generated_bindings.dart'

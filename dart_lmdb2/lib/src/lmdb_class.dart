@@ -1284,7 +1284,7 @@ class LMDB {
         calloc.free(dbiPtr);
       }
 
-      return _getStats(txn, dbi);
+      return await _getStats(txn, dbi);
     } finally {
       _lib.mdb_txn_abort(txn);
     }

@@ -1,73 +1,23 @@
-// The Android Gradle Plugin builds the native code with the Android NDK.
+// flutter_lmdb2 ships the prebuilt liblmdb.so of dart_lmdb2. The app loads
+// it through FFI, so this library carries no code of its own.
 
 group 'com.grammatek.flutter_lmdb2'
 version '1.0'
 
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        // The Android Gradle Plugin knows how to build native code with the NDK.
-        classpath 'com.android.tools.build:gradle:8.8.0'
-    }
-}
-
-rootProject.allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
 apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
 
 android {
     namespace = 'com.grammatek.flutter_lmdb2'
-    compileSdkVersion 33
-    ndkVersion = "25.1.8937393"
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = 17
-    }
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 21
-        targetSdkVersion 33
     }
-}
 
-tasks.register('copyNativeLibs') {
-    doLast {
-        def nativeDir = "${projectDir}/src/main/jniLibs"
-        def sourceDir = "${projectDir}/../lib/src/native/android"
-
-        // Ensure directories exist
-        ['arm64-v8a', 'armeabi-v7a', 'x86_64'].each { abi ->
-            mkdir("${nativeDir}/${abi}")
-        }
-
-        // Copy libraries for each ABI
-        copy {
-            from "${sourceDir}/arm64-v8a/liblmdb.so"
-            into "${nativeDir}/arm64-v8a"
-        }
-        copy {
-            from "${sourceDir}/armeabi-v7a/liblmdb.so"
-            into "${nativeDir}/armeabi-v7a"
-        }
-        copy {
-            from "${sourceDir}/x86_64/liblmdb.so"
-            into "${nativeDir}/x86_64"
+    sourceSets {
+        main {
+            // Filled by `dart run flutter_lmdb2:fetch_native`.
+            jniLibs.srcDirs = ['../lib/src/native/android']
         }
     }
 }
-
-preBuild.dependsOn(copyNativeLibs)

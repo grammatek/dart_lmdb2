@@ -36,8 +36,8 @@ jobs:
       run:
         working-directory: ./dart_lmdb2
     steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+      - uses: actions/checkout@v7
+      - uses: dart-lang/setup-dart@v1
 
       # Setup Android NDK (only Linux)
       - name: Setup Android NDK
@@ -89,7 +89,7 @@ jobs:
 
       - name: Upload native libraries
         if: matrix.build-android == false
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: native-lib-${{ matrix.name }}
           if-no-files-found: error
@@ -113,7 +113,7 @@ jobs:
 
       - name: Upload Android libraries
         if: matrix.build-android == true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: native-lib-android
           if-no-files-found: error
@@ -121,7 +121,7 @@ jobs:
 
       - name: Upload iOS libraries
         if: matrix.build-ios
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: native-lib-ios
           if-no-files-found: error
@@ -131,6 +131,9 @@ jobs:
             ./dart_lmdb2/lib/src/native/ios/simulator/
 
   build_test_flutter_lmdb2:
+    # Tests the plugin against the dart_lmdb2 and the native libraries of
+    # this commit, which are not released yet.
+    needs: collect_artifacts
     strategy:
       matrix:
         os: [macos-latest]
@@ -140,12 +143,12 @@ jobs:
       run:
         working-directory: ./flutter_lmdb2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ matrix.flutter }}
           channel: 'stable'
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.pub-cache
@@ -154,6 +157,19 @@ jobs:
           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-flutter-
+      - name: Download native libraries of this run
+        uses: actions/download-artifact@v8
+        with:
+          name: all-native-libraries
+          path: flutter_lmdb2/lib/src/native
+      - name: Use the packages of this commit
+        run: |
+          # fetch_native skips the download when the manifest matches the
+          # version of dart_lmdb2.
+          VERSION=$(grep '^version:' ../dart_lmdb2/pubspec.yaml | cut -d' ' -f2)
+          printf '{"version": "%s"}\n' "$VERSION" > lib/src/native/manifest.json
+          printf 'dependency_overrides:\n  dart_lmdb2:\n    path: ../dart_lmdb2\n' > pubspec_overrides.yaml
+          printf 'dependency_overrides:\n  dart_lmdb2:\n    path: ../../dart_lmdb2\n  flutter_lmdb2:\n    path: ..\n' > example/pubspec_overrides.yaml
       - name: Install dependencies
         run: |
           flutter config --no-analytics --no-cli-animations
@@ -250,11 +266,11 @@ jobs:
 
   collect_artifacts:
     if: always()
-    needs: [build_test_dart_lmdb2, build_test_flutter_lmdb2]
+    needs: [build_test_dart_lmdb2]
     runs-on: ubuntu-latest
     steps:
       - name: Download all platform libraries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: collected_artifacts
         continue-on-error: true
@@ -364,7 +380,7 @@ jobs:
           find final_artifacts -name "*.a" | sort
 
       - name: Upload final artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: all-native-libraries
           if-no-files-found: error
@@ -377,9 +393,9 @@ jobs:
           run:
             working-directory: ./dart_lmdb2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+      - uses: dart-lang/setup-dart@v1
 
       - name: Install dependencies
         run: |
@@ -390,10 +406,10 @@ jobs:
 
   create_release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [collect_artifacts]
+    needs: [collect_artifacts, build_test_flutter_lmdb2]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -428,7 +444,7 @@ jobs:
           fi
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: all-native-libraries
           path: native_libs
@@ -521,7 +537,7 @@ jobs:
           tar -czf $PACKAGE_NAME-$PACKAGE_VERSION-native-libs.tar.gz -C native_libs .
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: "${{ steps.tag_info.outputs.is_test_release == 'true' && format('TEST: {0} - {1}', steps.tag_info.outputs.package_name, steps.tag_info.outputs.package_version) || format('{0} v{1}', steps.tag_info.outputs.package_name, steps.tag_info.outputs.package_version) }}"

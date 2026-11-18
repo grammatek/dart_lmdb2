@@ -1,4 +1,4 @@
-import 'dart:ffi' show Abi, DynamicLibrary;
+import 'dart:ffi' show DynamicLibrary;
 import 'dart:io';
 import 'dart:isolate';
 import 'generated_bindings.dart';
@@ -41,21 +41,15 @@ class LMDBNative {
       return DynamicLibrary.process();
     }
 
-    // For all other platforms including Android, use path resolution
-    return DynamicLibrary.open(_resolveLibraryPath());
-  }
-
-  String _getAndroidAbi() {
-    switch (Abi.current()) {
-      case Abi.androidArm64:
-        return 'arm64-v8a';
-      case Abi.androidX64:
-        return 'x86_64';
-      default:
-        print(
-            'Warning: Unexpected ABI ${Abi.current()}, falling back to arm64-v8a');
-        return 'arm64-v8a';
+    if (Platform.isAndroid) {
+      // flutter_lmdb2 ships liblmdb.so as a native library of the app, so
+      // the dynamic linker finds it by name. Package URIs cannot be
+      // resolved inside a Flutter app.
+      return DynamicLibrary.open('liblmdb.so');
     }
+
+    // For all other platforms, use path resolution
+    return DynamicLibrary.open(_resolveLibraryPath());
   }
 
   String _resolveLibraryPath() {
@@ -65,16 +59,8 @@ class LMDBNative {
     }
 
     if (Platform.isAndroid) {
-      final abi = _getAndroidAbi();
-      final libName = 'liblmdb.so';
-      final packageUri =
-          Uri.parse('package:dart_lmdb2/src/native/android/$abi/$libName');
-      final Uri? fileUri = Isolate.resolvePackageUriSync(packageUri);
-      if (fileUri == null) {
-        throw FileSystemException(
-            'Could not resolve Android native library path');
-      }
-      return fileUri.toFilePath();
+      throw UnsupportedError(
+          'Android loads the library by name, no path resolution needed');
     }
 
     final platform = Platform.operatingSystem; // 'windows', 'macos', 'linux'

@@ -1,3 +1,10 @@
+## 0.9.6
+
+* Bump dependency to dart_lmdb2 0.9.13, which loads liblmdb.so by name on Android
+* Make the Android part an FFI plugin without Kotlin code, so apps no longer get the Kotlin Gradle Plugin warning
+* Compile the Android library against API 36 and let the app provide the Android Gradle Plugin
+* Take liblmdb.so straight from lib/src/native/android instead of copying it into the package
+
 ## 0.9.5
 
 * Fix fetch_native to download libraries to flutter_lmdb2 package directory when run from consumer apps
